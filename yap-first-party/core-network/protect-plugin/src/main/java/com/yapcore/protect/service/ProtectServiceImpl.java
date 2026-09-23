@@ -203,29 +203,37 @@ public final class ProtectServiceImpl implements ProtectService {
 
     @Override
     public CompletableFuture<Integer> rollbackChanges(List<Long> changeIds) {
+        if (changeIds == null || changeIds.isEmpty()) {
+            return CompletableFuture.completedFuture(0);
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
                 List<ProtectChange> changes = new ArrayList<>(repository.fetchByIds(changeIds));
                 changes.sort(applyOps.rollbackOrder());
-                int applied = 0;
-                List<Long> rolled = new ArrayList<>();
-                for (ProtectChange change : changes) {
-                    if (change.rolledBack()) {
-                        continue;
-                    }
-                    if (applyOps.applyChangeRollback(change)) {
-                        applied++;
-                        rolled.add(change.id());
-                    }
-                }
-                if (!rolled.isEmpty()) {
-                    repository.markRolledBack(rolled);
-                }
-                return applied;
+                return changes;
             } catch (SQLException e) {
                 plugin.getLogger().warning("rollback failed: " + e.getMessage());
-                return 0;
+                return List.<ProtectChange>of();
             }
+        }).thenCompose(changes -> {
+            if (changes.isEmpty()) {
+                return CompletableFuture.completedFuture(0);
+            }
+            plugin.getLogger().info("Protect rollback applying " + changes.size() + " change(s)…");
+            return applyOps.applyRollbackBatch(changes).thenCompose(rolled -> {
+                if (rolled.isEmpty()) {
+                    return CompletableFuture.completedFuture(0);
+                }
+                return CompletableFuture.supplyAsync(() -> {
+                    try {
+                        repository.markRolledBack(rolled);
+                        return rolled.size();
+                    } catch (SQLException e) {
+                        plugin.getLogger().warning("rollback mark failed: " + e.getMessage());
+                        return 0;
+                    }
+                });
+            });
         });
     }
 
@@ -269,29 +277,37 @@ public final class ProtectServiceImpl implements ProtectService {
 
     @Override
     public CompletableFuture<Integer> restoreChanges(List<Long> changeIds) {
+        if (changeIds == null || changeIds.isEmpty()) {
+            return CompletableFuture.completedFuture(0);
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
                 List<ProtectChange> changes = new ArrayList<>(repository.fetchByIds(changeIds));
                 changes.sort(applyOps.restoreOrder());
-                int applied = 0;
-                List<Long> restored = new ArrayList<>();
-                for (ProtectChange change : changes) {
-                    if (!change.rolledBack()) {
-                        continue;
-                    }
-                    if (applyOps.applyChangeRestore(change)) {
-                        applied++;
-                        restored.add(change.id());
-                    }
-                }
-                if (!restored.isEmpty()) {
-                    repository.clearRolledBack(restored);
-                }
-                return applied;
+                return changes;
             } catch (SQLException e) {
                 plugin.getLogger().warning("restore failed: " + e.getMessage());
-                return 0;
+                return List.<ProtectChange>of();
             }
+        }).thenCompose(changes -> {
+            if (changes.isEmpty()) {
+                return CompletableFuture.completedFuture(0);
+            }
+            plugin.getLogger().info("Protect restore applying " + changes.size() + " change(s)…");
+            return applyOps.applyRestoreBatch(changes).thenCompose(restored -> {
+                if (restored.isEmpty()) {
+                    return CompletableFuture.completedFuture(0);
+                }
+                return CompletableFuture.supplyAsync(() -> {
+                    try {
+                        repository.clearRolledBack(restored);
+                        return restored.size();
+                    } catch (SQLException e) {
+                        plugin.getLogger().warning("restore mark failed: " + e.getMessage());
+                        return 0;
+                    }
+                });
+            });
         });
     }
 

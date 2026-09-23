@@ -3,6 +3,9 @@ package com.yapcore.protect;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public final class ProtectConfig {
 
     private final JavaPlugin plugin;
@@ -53,7 +56,73 @@ public final class ProtectConfig {
         pruneDays = Math.max(0, c.getInt("retention.prune-days", pruneDays));
         maxRollbackRadius = Math.max(1, c.getInt("limits.max-rollback-radius", maxRollbackRadius));
         maxLookupLimit = Math.max(1, Math.min(200, c.getInt("limits.max-lookup-limit", maxLookupLimit)));
-        serverId = c.getString("server-id", serverId);
+        String configured = c.getString("server-id", "lobby");
+        String hinted = readInstanceServerId();
+        serverId = resolveServerId(configured, hinted);
+        if (hinted != null && !hinted.isBlank()
+                && (configured == null || !serverId.equalsIgnoreCase(configured.trim()))) {
+            plugin.getLogger().info("YaPProtect server-id " + configured + " → " + serverId
+                    + " (fleet yap-server-id.txt)");
+        }
+    }
+
+    /**
+     * Fleet stamps {@code yap-server-id.txt}. A copied lobby seed YAML must not keep
+     * {@code server-id: lobby} on survival/creative or rollback lookups mis-attribute.
+     */
+    static String resolveServerId(String configured, String hinted) {
+        if (hinted != null) {
+            String line = firstLine(hinted);
+            if (!line.isEmpty()) {
+                return line;
+            }
+        }
+        if (configured == null || configured.isBlank()) {
+            return "lobby";
+        }
+        return configured.trim();
+    }
+
+    private String readInstanceServerId() {
+        try {
+            Path hint = instanceServerIdHint(plugin.getDataFolder().toPath());
+            if (hint != null && Files.isRegularFile(hint)) {
+                return Files.readString(hint);
+            }
+        } catch (Exception ignored) {
+            // keep YAML value
+        }
+        return null;
+    }
+
+    /** {@code plugins/YaPProtect} → instance root → {@code yap-server-id.txt}. */
+    static Path instanceServerIdHint(Path dataFolder) {
+        if (dataFolder == null) {
+            return null;
+        }
+        Path abs = dataFolder.toAbsolutePath().normalize();
+        Path plugins = abs.getParent();
+        if (plugins == null) {
+            return null;
+        }
+        Path instance = plugins.getParent();
+        if (instance == null) {
+            return null;
+        }
+        return instance.resolve("yap-server-id.txt");
+    }
+
+    private static String firstLine(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        for (String line : raw.split("\\R")) {
+            String t = line.trim();
+            if (!t.isEmpty() && !t.startsWith("#")) {
+                return t;
+            }
+        }
+        return "";
     }
 
     public boolean loggingEnabled() {

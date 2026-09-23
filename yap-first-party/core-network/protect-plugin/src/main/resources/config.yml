@@ -27,4 +27,5 @@ database:
 retention:
   prune-days: 30
 
+# Fleet stamps yap-server-id.txt next to the server jar — that file wins over this value.
 server-id: lobby
