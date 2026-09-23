@@ -1,0 +1,14 @@
+{
+  "pack": {
+    "description": "YaPcore default \u2014 Faithful 64x + YaP Skies + Water + Portals + YaPItems",
+    "pack_format": 88,
+    "min_format": [
+      88,
+      0
+    ],
+    "max_format": [
+      88,
+      0
+    ]
+  }
+}

@@ -10,6 +10,8 @@
 build/dist/
 # Local release packages (gradle publishReleasesFolder) — never commit
 /releases/
+# Flat GitHub staging folder at repo root (symlinked from releases/upload)
+/UPLOAD/
 out/
 bin/
 target/

@@ -35,10 +35,10 @@ YaP-authored overlays in this tree (skies, water, foliage, etc.) follow YaPcore�
 
 ## YaP420 item art (CMD 12200–12230)
 
-GanjaCraft / Hempdustry 2 textures (GPLv3, warlonmhite) vendored under
-`THIRD_PARTY/ganjacraft/` and mapped into `yap-items` as `yap420_*.png`.
-See `THIRD_PARTY/ganjacraft-NOTICE.txt`. Original YaP rolling-paper booklet,
-3D drying rack, and blunt wrap variant are also YaP-authored.
+Original 16×16 sprites in `yap-items` (`yap420_*.png`), including tall-crop
+bottom / middle / top sheets. In-world plants use `block/cross` and
+stacked-cross models. Sativa is the pale yellow-green column; indica is the
+shorter, darker bush. The drying-rack icon is a wood frame with hanging strips.
 
 ## YaP Skies + Water + Foliage + Portals
 

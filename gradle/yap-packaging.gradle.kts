@@ -273,24 +273,63 @@ tasks.register("publishReleasesFolder") {
             """
             GitHub release assets for YaPcore $ver
             =====================================
-            Upload ONLY these (overwrite with --clobber):
+            DO NOT upload from this folder directly.
 
-            1. yapcore-release-linux.zip      Full Linux server box
-            2. yapcore-release-windows.zip    Full Windows server box
-            3. yap-network-suite.zip          Link + network plugins only
-            4. yap-gameplay-suite.zip         Skills/dungeons/stacker/… only
-            5. yapcore-default.zip            Java Edition resource pack (CDN)
-            6. yapcore-default.mcpack         Bedrock resource pack (CDN)
-            7. client_mods.zip                Optional Fabric client mods
+            Upload from the repo-root UPLOAD/ folder only:
 
-            Do NOT upload the yapcore-release/ folder — it is the unzipped form
-            of #1/#2 for local testing (~900MB).
+              ./scripts/release/stage-github-upload.sh
+              # → UPLOAD/   (7 files only)
 
-            Do NOT upload loose jars from plugins/ — they are already inside #1–4.
+              gh release upload $ver UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore
+              # or: ./scripts/release/stage-github-upload.sh --upload
+
+            Packs always come from resourcepacks/yapcore-default.{zip,mcpack}.
+            Do NOT upload yapcore-release/ (unzipped trees) or anything under dist/.
+            """.trimIndent() + "\n"
+        )
+
+        // Flat upload mirror at repo root — the only directory operators should upload from.
+        val uploadDir = project.layout.projectDirectory.dir("UPLOAD").asFile
+        uploadDir.mkdirs()
+        uploadDir.listFiles()?.forEach { f ->
+            if (f.name != "README.txt") f.deleteRecursively()
+        }
+        listOf(
+            "yapcore-release-linux.zip",
+            "yapcore-release-windows.zip",
+            "yap-network-suite.zip",
+            "yap-gameplay-suite.zip",
+            "yapcore-default.zip",
+            "yapcore-default.mcpack",
+            "client_mods.zip",
+        ).forEach { name ->
+            val src = dest.resolve(name)
+            if (src.isFile) {
+                src.copyTo(uploadDir.resolve(name), overwrite = true)
+            }
+        }
+        // Stable alias so old docs/scripts that say releases/upload/ still work
+        val uploadAlias = project.layout.projectDirectory.dir("releases/upload").asFile
+        if (uploadAlias.exists() && !java.nio.file.Files.isSymbolicLink(uploadAlias.toPath())) {
+            uploadAlias.deleteRecursively()
+        }
+        if (!java.nio.file.Files.isSymbolicLink(uploadAlias.toPath())) {
+            java.nio.file.Files.createSymbolicLink(uploadAlias.toPath(), java.nio.file.Paths.get("../UPLOAD"))
+        }
+        uploadDir.resolve("README.txt").writeText(
+            """
+            YaPcore $ver — UPLOAD THIS FOLDER TO GITHUB
+            ===========================================
+            Upload every *.zip / *.mcpack here to tag $ver.
+
+              gh release upload $ver UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore
+
+            Or: ./scripts/release/stage-github-upload.sh --upload
             """.trimIndent() + "\n"
         )
 
         logger.lifecycle("Release folder → ${dest.absolutePath}")
+        logger.lifecycle("GitHub upload → ${uploadDir.absolutePath}")
         dest.walkTopDown().maxDepth(2).sortedBy { it.path }.forEach { f ->
             if (f == dest) return@forEach
             val rel = f.relativeTo(dest).path
