@@ -370,7 +370,8 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             if ("apply".equals(shopOp) || "preset".equals(shopOp) || "load".equals(shopOp)) {
                 NpcTraderAccess traders = NpcShopOps.traders();
                 List<String> presets = traders == null
-                        ? List.of("weapons", "armor", "tools", "food", "blocks", "redstone", "crafting", "enchants")
+                        ? List.of("weapons", "armor", "tools", "food", "blocks", "redstone", "crafting", "enchants",
+                                "farming", "tractor_supply", "fishing", "tackle_shack")
                         : List.copyOf(traders.shopPresetIds());
                 return NpcCommandParse.prefix(presets, args[2]);
             }

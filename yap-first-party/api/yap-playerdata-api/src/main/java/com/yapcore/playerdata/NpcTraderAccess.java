@@ -46,7 +46,7 @@ public interface NpcTraderAccess {
 
     boolean deleteCatalog(long traderId);
 
-    /** Built-in shop preset ids: weapons, armor, tools, food, blocks, redstone, crafting, enchants. */
+    /** Built-in shop preset ids: weapons, armor, tools, food, blocks, redstone, crafting, enchants, farming, fishing. */
     Set<String> shopPresetIds();
 
     /**

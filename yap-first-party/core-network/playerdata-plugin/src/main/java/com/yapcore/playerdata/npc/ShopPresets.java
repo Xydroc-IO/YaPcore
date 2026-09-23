@@ -36,7 +36,8 @@ public final class ShopPresets {
     }
 
     private static final List<String> PRESET_IDS = List.of(
-            "weapons", "armor", "tools", "food", "blocks", "redstone", "crafting", "enchants");
+            "weapons", "armor", "tools", "food", "blocks", "redstone", "crafting", "enchants",
+            "farming", "fishing");
 
     public static Set<String> ids() {
         return Set.copyOf(PRESET_IDS);
@@ -55,6 +56,8 @@ public final class ShopPresets {
             case "redstone" -> redstone();
             case "crafting" -> crafting();
             case "enchants" -> enchants();
+            case "farming", "tractor_supply", "tractor-supply", "tractor" -> farming();
+            case "fishing", "tackle_shack", "tackle-shack", "tackle" -> fishing();
             default -> List.of();
         };
     }
@@ -354,6 +357,184 @@ public final class ShopPresets {
         add(o, Material.BOOK, 16, 48, 16);
         add(o, Material.EXPERIENCE_BOTTLE, 16, 320, 110);
         add(o, Material.LAPIS_LAZULI, 32, 80, 28);
+        return o;
+    }
+
+    /**
+     * Tractor Supply — seeds, saplings, crops, soil, bone meal, composting.
+     * No tools (hoes/axes live in the {@code tools} preset).
+     */
+    private static List<OfferSpec> farming() {
+        List<OfferSpec> o = new ArrayList<>();
+        // --- Seeds & pods ---
+        add(o, Material.WHEAT_SEEDS, 32, 24, 8);
+        add(o, Material.BEETROOT_SEEDS, 32, 28, 9);
+        add(o, Material.MELON_SEEDS, 16, 36, 12);
+        add(o, Material.PUMPKIN_SEEDS, 16, 36, 12);
+        add(o, Material.TORCHFLOWER_SEEDS, 8, 120, 40);
+        add(o, Material.PITCHER_POD, 8, 120, 40);
+        // --- Plantable crops / produce ---
+        add(o, Material.WHEAT, 32, 40, 14);
+        add(o, Material.BEETROOT, 32, 36, 12);
+        add(o, Material.CARROT, 32, 40, 14);
+        add(o, Material.POTATO, 32, 36, 12);
+        add(o, Material.POISONOUS_POTATO, 8, 8, 2);
+        add(o, Material.NETHER_WART, 32, 80, 28);
+        add(o, Material.SUGAR_CANE, 32, 48, 16);
+        add(o, Material.BAMBOO, 32, 32, 10);
+        add(o, Material.CACTUS, 16, 40, 14);
+        add(o, Material.KELP, 32, 28, 9);
+        add(o, Material.SEA_PICKLE, 16, 48, 16);
+        add(o, Material.SWEET_BERRIES, 32, 24, 8);
+        add(o, Material.GLOW_BERRIES, 32, 36, 12);
+        add(o, Material.COCOA_BEANS, 32, 44, 15);
+        add(o, Material.APPLE, 16, 24, 8);
+        add(o, Material.MELON_SLICE, 32, 20, 6);
+        add(o, Material.MELON, 8, 48, 16);
+        add(o, Material.PUMPKIN, 8, 40, 14);
+        add(o, Material.CARVED_PUMPKIN, 4, 36, 12);
+        add(o, Material.HAY_BLOCK, 8, 90, 30);
+        // --- Saplings & tree starters ---
+        add(o, Material.OAK_SAPLING, 16, 32, 10);
+        add(o, Material.SPRUCE_SAPLING, 16, 32, 10);
+        add(o, Material.BIRCH_SAPLING, 16, 32, 10);
+        add(o, Material.JUNGLE_SAPLING, 16, 40, 14);
+        add(o, Material.ACACIA_SAPLING, 16, 32, 10);
+        add(o, Material.DARK_OAK_SAPLING, 16, 40, 14);
+        add(o, Material.CHERRY_SAPLING, 16, 48, 16);
+        add(o, Material.MANGROVE_PROPAGULE, 16, 44, 15);
+        add(o, Material.PALE_OAK_SAPLING, 16, 48, 16);
+        add(o, Material.AZALEA, 8, 40, 14);
+        add(o, Material.FLOWERING_AZALEA, 8, 56, 18);
+        // --- Farm soil & ground ---
+        add(o, Material.DIRT, 64, 8, 2);
+        add(o, Material.COARSE_DIRT, 64, 12, 3);
+        add(o, Material.ROOTED_DIRT, 32, 36, 12);
+        add(o, Material.GRASS_BLOCK, 64, 24, 8);
+        add(o, Material.PODZOL, 32, 40, 14);
+        add(o, Material.MYCELIUM, 32, 60, 20);
+        add(o, Material.MOSS_BLOCK, 32, 48, 16);
+        add(o, Material.PALE_MOSS_BLOCK, 32, 52, 18);
+        add(o, Material.MUD, 64, 16, 5);
+        add(o, Material.MUDDY_MANGROVE_ROOTS, 16, 40, 14);
+        add(o, Material.FARMLAND, 32, 28, 9);
+        // --- Bone meal & compost ---
+        add(o, Material.BONE_MEAL, 64, 64, 22);
+        add(o, Material.BONE_BLOCK, 16, 90, 30);
+        add(o, Material.BONE, 32, 36, 12);
+        add(o, Material.COMPOSTER, 1, 50, 18);
+        // --- Fungi & nether growables ---
+        add(o, Material.BROWN_MUSHROOM, 16, 28, 9);
+        add(o, Material.RED_MUSHROOM, 16, 28, 9);
+        add(o, Material.CRIMSON_FUNGUS, 16, 36, 12);
+        add(o, Material.WARPED_FUNGUS, 16, 36, 12);
+        add(o, Material.CRIMSON_ROOTS, 16, 20, 6);
+        add(o, Material.WARPED_ROOTS, 16, 20, 6);
+        add(o, Material.NETHER_SPROUTS, 32, 16, 5);
+        add(o, Material.HANGING_ROOTS, 16, 24, 8);
+        add(o, Material.SPORE_BLOSSOM, 4, 80, 28);
+        add(o, Material.GLOW_LICHEN, 16, 32, 10);
+        add(o, Material.VINE, 32, 20, 6);
+        // --- Flowers & decorative plants ---
+        add(o, Material.DANDELION, 16, 12, 4);
+        add(o, Material.POPPY, 16, 12, 4);
+        add(o, Material.BLUE_ORCHID, 16, 16, 5);
+        add(o, Material.ALLIUM, 16, 16, 5);
+        add(o, Material.AZURE_BLUET, 16, 12, 4);
+        add(o, Material.RED_TULIP, 16, 14, 4);
+        add(o, Material.ORANGE_TULIP, 16, 14, 4);
+        add(o, Material.WHITE_TULIP, 16, 14, 4);
+        add(o, Material.PINK_TULIP, 16, 14, 4);
+        add(o, Material.OXEYE_DAISY, 16, 12, 4);
+        add(o, Material.CORNFLOWER, 16, 14, 4);
+        add(o, Material.LILY_OF_THE_VALLEY, 16, 16, 5);
+        add(o, Material.TORCHFLOWER, 8, 80, 28);
+        add(o, Material.PITCHER_PLANT, 4, 100, 35);
+        add(o, Material.SUNFLOWER, 8, 28, 9);
+        add(o, Material.LILAC, 8, 24, 8);
+        add(o, Material.ROSE_BUSH, 8, 24, 8);
+        add(o, Material.PEONY, 8, 24, 8);
+        add(o, Material.PINK_PETALS, 16, 20, 6);
+        add(o, Material.SHORT_GRASS, 32, 8, 2);
+        add(o, Material.TALL_GRASS, 16, 12, 3);
+        add(o, Material.FERN, 16, 10, 3);
+        add(o, Material.LARGE_FERN, 8, 16, 5);
+        add(o, Material.SEAGRASS, 32, 12, 4);
+        // --- Water / bees / eggs for farm setups ---
+        add(o, Material.WATER_BUCKET, 1, 50, 18);
+        add(o, Material.HONEYCOMB, 8, 60, 20);
+        add(o, Material.HONEY_BOTTLE, 4, 60, 22);
+        add(o, Material.BEEHIVE, 1, 180, 65);
+        add(o, Material.BEE_NEST, 1, 220, 75);
+        add(o, Material.EGG, 16, 24, 8);
+        add(o, Material.TURTLE_EGG, 4, 120, 40);
+        add(o, Material.SNIFFER_EGG, 1, 900, 300);
+        return o;
+    }
+
+    /**
+     * Tackle Shack — rods, bait/catch, buckets, ocean loot, fishing enchants.
+     */
+    private static List<OfferSpec> fishing() {
+        List<OfferSpec> o = new ArrayList<>();
+        // --- Rods ---
+        add(o, Material.FISHING_ROD, 1, 80, 30);
+        add(o, Material.CARROT_ON_A_STICK, 1, 60, 22);
+        add(o, Material.WARPED_FUNGUS_ON_A_STICK, 1, 70, 26);
+        addEnchanted(o, Material.FISHING_ROD, 1, 450,
+                Map.of(Enchantment.LURE, 3, Enchantment.LUCK_OF_THE_SEA, 3, Enchantment.UNBREAKING, 2));
+        addEnchanted(o, Material.FISHING_ROD, 1, 1200,
+                Map.of(Enchantment.LURE, 3, Enchantment.LUCK_OF_THE_SEA, 3,
+                        Enchantment.UNBREAKING, 3, Enchantment.MENDING, 1));
+        // --- Bait & catch (raw) ---
+        add(o, Material.COD, 16, 28, 10);
+        add(o, Material.SALMON, 16, 32, 11);
+        add(o, Material.TROPICAL_FISH, 8, 40, 14);
+        add(o, Material.PUFFERFISH, 8, 48, 16);
+        add(o, Material.COOKED_COD, 16, 36, 12);
+        add(o, Material.COOKED_SALMON, 16, 44, 16);
+        add(o, Material.DRIED_KELP, 32, 20, 6);
+        add(o, Material.BREAD, 16, 24, 8);
+        add(o, Material.ROTTEN_FLESH, 16, 12, 4);
+        // --- Buckets & water ---
+        add(o, Material.WATER_BUCKET, 1, 50, 18);
+        add(o, Material.COD_BUCKET, 1, 120, 40);
+        add(o, Material.SALMON_BUCKET, 1, 140, 48);
+        add(o, Material.TROPICAL_FISH_BUCKET, 1, 160, 55);
+        add(o, Material.PUFFERFISH_BUCKET, 1, 180, 60);
+        add(o, Material.AXOLOTL_BUCKET, 1, 280, 95);
+        add(o, Material.TADPOLE_BUCKET, 1, 100, 35);
+        // --- Coastal / craft supplies ---
+        add(o, Material.STRING, 16, 32, 11);
+        add(o, Material.STICK, 32, 8, 2);
+        add(o, Material.LILY_PAD, 16, 24, 8);
+        add(o, Material.KELP, 32, 28, 9);
+        add(o, Material.SEA_PICKLE, 16, 48, 16);
+        add(o, Material.SEAGRASS, 32, 12, 4);
+        add(o, Material.INK_SAC, 16, 28, 9);
+        add(o, Material.GLOW_INK_SAC, 16, 48, 16);
+        add(o, Material.TURTLE_SCUTE, 4, 80, 28);
+        add(o, Material.TURTLE_EGG, 4, 120, 40);
+        add(o, Material.NAUTILUS_SHELL, 4, 200, 70);
+        add(o, Material.HEART_OF_THE_SEA, 1, 900, 320);
+        add(o, Material.PRISMARINE_SHARD, 16, 40, 14);
+        add(o, Material.PRISMARINE_CRYSTALS, 16, 48, 16);
+        add(o, Material.SPONGE, 4, 180, 60);
+        add(o, Material.WET_SPONGE, 4, 160, 55);
+        // --- Boats & gear ---
+        add(o, Material.OAK_BOAT, 1, 40, 14);
+        add(o, Material.OAK_CHEST_BOAT, 1, 80, 28);
+        add(o, Material.SPYGLASS, 1, 120, 40);
+        add(o, Material.COMPASS, 1, 60, 22);
+        add(o, Material.MAP, 1, 40, 14);
+        add(o, Material.LEAD, 4, 48, 16);
+        add(o, Material.NAME_TAG, 1, 220, 75);
+        add(o, Material.TRIDENT, 1, 1200, 450);
+        // --- Fishing enchants (books) ---
+        book(o, Enchantment.LURE, 3, 450);
+        book(o, Enchantment.LUCK_OF_THE_SEA, 3, 450);
+        book(o, Enchantment.UNBREAKING, 3, 700);
+        book(o, Enchantment.MENDING, 1, 2000);
         return o;
     }
 

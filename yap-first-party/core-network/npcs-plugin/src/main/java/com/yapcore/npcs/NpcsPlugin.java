@@ -6,6 +6,7 @@ import com.yapcore.npcs.db.NpcDatabase;
 import com.yapcore.npcs.db.NpcRepository;
 import com.yapcore.npcs.db.QuestRepository;
 import com.yapcore.npcs.listener.NpcInteractListener;
+import com.yapcore.npcs.listener.NpcProtectListener;
 import com.yapcore.npcs.listener.QuestEconomyListener;
 import com.yapcore.npcs.listener.QuestListener;
 import com.yapcore.npcs.listener.QuestMmoListener;
@@ -51,6 +52,7 @@ public final class NpcsPlugin extends JavaPlugin {
         }
         getServer().getPluginManager().registerEvents(new NpcInteractListener(this, config, npcService, questService),
                 this);
+        getServer().getPluginManager().registerEvents(new NpcProtectListener(this, npcService), this);
 
         PluginCommand npcCmd = getCommand("npc");
         if (npcCmd != null) {

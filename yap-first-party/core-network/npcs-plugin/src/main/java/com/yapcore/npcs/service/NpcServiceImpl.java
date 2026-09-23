@@ -261,6 +261,22 @@ public final class NpcServiceImpl implements NpcService {
         }
     }
 
+    /** Respawn a single NPC by id (e.g. after an unexpected death). */
+    public void respawn(String id) {
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        try {
+            var opt = repository.get(config.serverId(), id);
+            if (opt.isEmpty()) {
+                return;
+            }
+            spawnOrRefresh(opt.get());
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "npc respawn " + id, e);
+        }
+    }
+
     public Optional<NpcRepository.NpcRecord> get(String id) {
         try {
             return repository.get(config.serverId(), id);
@@ -347,7 +363,9 @@ public final class NpcServiceImpl implements NpcService {
         villager.setAI(false);
         villager.setInvulnerable(true);
         villager.setSilent(true);
+        villager.setPersistent(true);
         villager.setRemoveWhenFarAway(false);
+        villager.setCollidable(false);
         villager.setProfession(professionFor(npc.id()));
         tag(villager, npc.id());
         if (!NpcHologramNametags.apply(plugin, config, npc.id(), npc.displayName(), villager)) {
@@ -369,7 +387,9 @@ public final class NpcServiceImpl implements NpcService {
         mannequin.setImmovable(true);
         mannequin.setInvulnerable(true);
         mannequin.setSilent(true);
+        mannequin.setPersistent(true);
         mannequin.setRemoveWhenFarAway(false);
+        mannequin.setCollidable(false);
         mannequin.setGravity(false);
         mannequin.setDescription(Component.empty());
         tag(mannequin, npc.id());
@@ -432,6 +452,8 @@ public final class NpcServiceImpl implements NpcService {
             case "chef", "butcher" -> Villager.Profession.BUTCHER;
             case "blocks", "mason" -> Villager.Profession.MASON;
             case "redstone", "cleric" -> Villager.Profession.CLERIC;
+            case "farming", "tractor_supply", "farmer" -> Villager.Profession.FARMER;
+            case "fishing", "tackle_shack", "fisherman" -> Villager.Profession.FISHERMAN;
             default -> Villager.Profession.NITWIT;
         };
     }

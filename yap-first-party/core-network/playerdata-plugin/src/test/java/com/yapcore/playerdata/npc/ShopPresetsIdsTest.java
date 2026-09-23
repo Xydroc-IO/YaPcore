@@ -15,7 +15,11 @@ class ShopPresetsIdsTest {
         Set<String> ids = ShopPresets.ids();
         assertEquals(Set.of(
                 "weapons", "armor", "tools", "food",
-                "blocks", "redstone", "crafting", "enchants"), ids);
+                "blocks", "redstone", "crafting", "enchants", "farming", "fishing"), ids);
+        assertTrue(ShopPresets.get("tractor_supply").size() > 20);
+        assertEquals(ShopPresets.get("farming").size(), ShopPresets.get("tractor-supply").size());
+        // fishing/tackle_shack uses Enchantment keys (needs Bukkit registry) — id alias only here
+        assertTrue(ids.contains("fishing"));
     }
 
     @Test

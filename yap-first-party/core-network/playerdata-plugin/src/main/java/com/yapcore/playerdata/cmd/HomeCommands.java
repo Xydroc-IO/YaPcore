@@ -69,7 +69,9 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         homes.upsert(player.getUniqueId(), Teleports.fromPlayer(player, name, config.serverId()));
-        player.sendMessage("§aHome §f" + name + " §aset.");
+        player.sendMessage("§aYour personal home §f" + name + " §aset §7(only you can use /home "
+                + ("home".equals(name) ? "" : name + " ")
+                + "— not shared).");
         return true;
     }
 
@@ -77,7 +79,10 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
         String name = args.length > 0 ? args[0].toLowerCase(Locale.ROOT) : "home";
         var opt = homes.get(player.getUniqueId(), name);
         if (opt.isEmpty()) {
-            player.sendMessage("§cUnknown home §f" + name);
+            player.sendMessage("§cYou have no personal home §f" + name
+                    + "§c. Set one with §f/sethome"
+                    + ("home".equals(name) ? "" : " " + name)
+                    + "§c. Faction base is §f/f home§c.");
             return true;
         }
         if (Teleports.tryTeleport(player, opt.get(), config.serverId())) {

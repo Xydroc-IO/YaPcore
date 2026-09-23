@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Quest NPCs, dialogue, hub actions (shop/warp/spawn/command) — Folia-safe
 website: https://github.com/yaplabs
-softdepend: [YaPDB, YaPPlayerData, YaPSkills, YaPPortals, YaPHolo]
+softdepend: [YaPDB, YaPPlayerData, YaPSkills, YaPPortals, YaPHolo, YaPRegions]
 commands:
   npc:
     description: Quest NPC admin
