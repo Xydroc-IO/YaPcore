@@ -135,7 +135,10 @@ public final class EndDoorTags {
 
     public void deactivate(Block keystone, EndDoorStructure structure) {
         Optional<EndDoorStructure.Frame> frame = frameFromKeystone(keystone);
-        frame.ifPresent(structure::clearInterior);
+        frame.ifPresent(f -> {
+            EndDoorVisuals.clearFace(f);
+            structure.clearInterior(f);
+        });
         if (isKeystone(keystone)) {
             keystone.setType(structure.frameMaterial(), false);
         }

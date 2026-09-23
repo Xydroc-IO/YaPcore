@@ -147,18 +147,23 @@ public final class DungeonListener implements Listener {
             return;
         }
 
-        // Already-activated structure → tip (walk-through opens the menu)
+        // Already-activated structure → open menu (walk-through also works)
         Optional<Block> keystone = structureTags.findNearbyKeystone(
                 block, Math.max(structure.outerWidth(), structure.outerHeight()));
         if (keystone.isPresent()) {
             Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
-            if (frame.isPresent() && structure.contains(frame.get(), block)) {
+            if (frame.isPresent() && structure.contains(frame.get(), block, 1)) {
+                event.setCancelled(true);
                 structure.ensureWalkable(frame.get());
                 DungeonPortalVisuals.spawnFace(frame.get());
-                if (used.getType() == config.structureActivateItem()) {
-                    event.setCancelled(true);
-                    player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
+                if (denyClaimedPortal(player, block.getLocation())) {
+                    return;
                 }
+                if (instances.byPlayer(player.getUniqueId()).isPresent()) {
+                    player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
+                    return;
+                }
+                menu.open(player, 0);
                 return;
             }
         }
@@ -452,8 +457,8 @@ public final class DungeonListener implements Listener {
         if (keystone.isPresent()) {
             Optional<PortalStructure.Frame> fromKey = structureTags.frameFromKeystone(keystone.get());
             if (fromKey.isPresent()
-                    && (structure.contains(fromKey.get(), block)
-                    || structure.contains(fromKey.get(), block.getRelative(0, -1, 0)))) {
+                    && (structure.contains(fromKey.get(), block, 1)
+                    || structure.contains(fromKey.get(), block.getRelative(0, -1, 0), 1))) {
                 return fromKey;
             }
         }

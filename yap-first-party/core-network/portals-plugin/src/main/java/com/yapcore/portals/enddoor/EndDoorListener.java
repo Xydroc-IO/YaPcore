@@ -227,13 +227,12 @@ public final class EndDoorListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onTeleport(PlayerTeleportEvent event) {
-        if (event instanceof PlayerPortalEvent) {
-            return;
-        }
         Location to = event.getTo();
         boolean toNether = to != null && to.getWorld() != null
                 && to.getWorld().getEnvironment() == org.bukkit.World.Environment.NETHER;
-        if (event.getCause() != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL && !toNether) {
+        // Folia portal-couple may skip PlayerPortalEvent — catch any hop to the Nether
+        // from beside a lit End door and send the player to The End instead.
+        if (!toNether && event.getCause() != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
             return;
         }
         if (!hijackEndDoor(event.getPlayer(), event.getFrom(),
@@ -270,7 +269,7 @@ public final class EndDoorListener implements Listener {
             return false;
         }
         Block block = loc.getBlock();
-        int radius = Math.max(structure.outerWidth(), structure.outerHeight());
+        int radius = Math.max(structure.outerWidth(), structure.outerHeight()) + 1;
         Optional<Block> keystone = tags.findNearbyKeystone(block, radius);
         if (keystone.isEmpty()) {
             keystone = tags.findNearbyKeystone(block.getRelative(0, -1, 0), radius);
@@ -283,7 +282,8 @@ public final class EndDoorListener implements Listener {
             return false;
         }
         structure.ensureWalkable(frame.get());
-        return structure.contains(frame.get(), block)
-                || structure.contains(frame.get(), block.getRelative(0, -1, 0));
+        // depth=1: player often stands one block in front of the thin portal plane
+        return structure.contains(frame.get(), block, 1)
+                || structure.contains(frame.get(), block.getRelative(0, -1, 0), 1);
     }
 }

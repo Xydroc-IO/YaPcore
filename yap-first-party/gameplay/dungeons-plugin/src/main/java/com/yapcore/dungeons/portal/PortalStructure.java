@@ -4,7 +4,6 @@ import org.bukkit.Axis;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.Orientable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -294,6 +293,11 @@ public final class PortalStructure {
     }
 
     public boolean contains(Frame frame, Block block) {
+        return contains(frame, block, 0);
+    }
+
+    /** @param depthBlocks allow standing this many blocks in front/behind the portal plane */
+    public boolean contains(Frame frame, Block block, int depthBlocks) {
         if (!block.getWorld().equals(frame.world())) {
             return false;
         }
@@ -301,55 +305,41 @@ public final class PortalStructure {
             return false;
         }
         if (frame.axis() == Axis.X) {
-            return block.getZ() == frame.fixed()
+            return Math.abs(block.getZ() - frame.fixed()) <= depthBlocks
                     && block.getX() >= frame.minAlong()
                     && block.getX() <= frame.maxAlong();
         }
-        return block.getX() == frame.fixed()
+        return Math.abs(block.getX() - frame.fixed()) <= depthBlocks
                 && block.getZ() >= frame.minAlong()
                 && block.getZ() <= frame.maxAlong();
     }
 
     /**
      * Opens the portal so players can walk through. Solid config materials (e.g. stained glass)
-     * are replaced with air — the lime ItemDisplay provides the look without blocking movement.
+     * become air; {@link DungeonPortalVisuals} provides the lime swirl without blocking.
      */
     public void fillInterior(Frame frame) {
-        Material fill = walkableFill();
         for (Block b : frame.interiorBlocks()) {
-            b.setType(fill, false);
-            if (fill == Material.NETHER_PORTAL && b.getBlockData() instanceof Orientable orientable) {
-                orientable.setAxis(frame.axis());
-                b.setBlockData(orientable, false);
-            }
+            b.setType(Material.AIR, false);
         }
     }
 
-    /** Ensure an already-lit frame is walkable (repairs old solid-glass fills). */
+    /** Ensure an already-lit frame is walkable (repairs old solid-glass / nether fills). */
     public void ensureWalkable(Frame frame) {
         for (Block b : frame.interiorBlocks()) {
-            if (b.getType().isSolid()) {
+            Material t = b.getType();
+            if (t.isSolid() || t == Material.NETHER_PORTAL) {
                 fillInterior(frame);
                 return;
             }
         }
     }
 
-    private Material walkableFill() {
-        // Solid blocks (stained glass, etc.) block walk-through — leave air for the disc overlay.
-        if (interiorMaterial.isAir() || !interiorMaterial.isSolid()) {
-            return interiorMaterial == Material.AIR ? Material.AIR : interiorMaterial;
-        }
-        return Material.AIR;
-    }
-
     public void clearInterior(Frame frame) {
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
-            if (t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t) || t.isAir()) {
-                if (!t.isAir()) {
-                    b.setType(Material.AIR, false);
-                }
+            if (t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t)) {
+                b.setType(Material.AIR, false);
             }
         }
     }

@@ -4,7 +4,6 @@ import org.bukkit.Axis;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.Orientable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -318,6 +317,14 @@ public final class EndDoorStructure {
     }
 
     public boolean contains(Frame frame, Block block) {
+        return contains(frame, block, 0);
+    }
+
+    /**
+     * @param depthBlocks allow standing this many blocks in front/behind the portal plane
+     *                    (walk-through detection — players rarely sit exactly on the thin plane)
+     */
+    public boolean contains(Frame frame, Block block, int depthBlocks) {
         if (!block.getWorld().equals(frame.world())) {
             return false;
         }
@@ -325,48 +332,45 @@ public final class EndDoorStructure {
             return false;
         }
         if (frame.axis() == Axis.X) {
-            return block.getZ() == frame.fixed()
+            return Math.abs(block.getZ() - frame.fixed()) <= depthBlocks
                     && block.getX() >= frame.minAlong()
                     && block.getX() <= frame.maxAlong();
         }
-        return block.getX() == frame.fixed()
+        return Math.abs(block.getX() - frame.fixed()) <= depthBlocks
                 && block.getZ() >= frame.minAlong()
                 && block.getZ() <= frame.maxAlong();
     }
 
     /**
-     * Solid config interiors (stained glass) block walk-through — use nether portal blocks instead
-     * so move/portal events fire and EndDoorListener can hijack travel to The End.
+     * Always air — never place {@link Material#NETHER_PORTAL} (Folia sends those to the Nether).
+     * Visuals are {@link EndDoorVisuals} BlockDisplays.
      */
     public void fillInterior(Frame frame) {
-        Material fill = walkableFill();
         for (Block b : frame.interiorBlocks()) {
-            b.setType(fill, false);
-            if (fill == Material.NETHER_PORTAL && b.getBlockData() instanceof Orientable orientable) {
-                orientable.setAxis(frame.axis());
-                b.setBlockData(orientable, false);
-            }
+            b.setType(Material.AIR, false);
         }
+        EndDoorVisuals.spawnFace(frame);
     }
 
-    /** Repair already-lit End doors that were filled with solid glass. */
+    /** Repair already-lit End doors that still have solid glass or nether portal blocks. */
     public void ensureWalkable(Frame frame) {
+        boolean dirty = false;
         for (Block b : frame.interiorBlocks()) {
-            if (b.getType().isSolid()) {
-                fillInterior(frame);
-                return;
+            Material t = b.getType();
+            if (t.isSolid() || t == Material.NETHER_PORTAL) {
+                dirty = true;
+                break;
             }
         }
-    }
-
-    private Material walkableFill() {
-        if (interiorMaterial.isAir() || !interiorMaterial.isSolid()) {
-            return interiorMaterial == Material.AIR ? Material.NETHER_PORTAL : interiorMaterial;
+        if (dirty) {
+            fillInterior(frame);
+        } else {
+            EndDoorVisuals.spawnFace(frame);
         }
-        return Material.NETHER_PORTAL;
     }
 
     public void clearInterior(Frame frame) {
+        EndDoorVisuals.clearFace(frame);
         for (Block b : frame.interiorBlocks()) {
             if (isAllowedInterior(b.getType()) && !b.getType().isAir()) {
                 b.setType(Material.AIR, false);
