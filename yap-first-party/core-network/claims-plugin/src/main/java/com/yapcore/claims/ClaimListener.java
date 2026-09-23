@@ -3,30 +3,41 @@ package com.yapcore.claims;
 import org.bukkit.Material;
 import org.bukkit.WeatherType;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Creeper;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
-import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFertilizeEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityPlaceEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -83,6 +94,77 @@ public final class ClaimListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFertilize(BlockFertilizeEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        if (!claims.canBuild(player, event.getBlock().getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cClaimed land — you cannot build here.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onIgnite(BlockIgniteEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        if (!claims.canBuild(player, event.getBlock().getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cClaimed land — you cannot build here.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPlayerChangeBlock(EntityChangeBlockEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (!claims.canBuild(player, event.getBlock().getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cClaimed land — you cannot build here.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHangingPlace(HangingPlaceEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        if (!claims.canBuild(player, event.getEntity().getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cClaimed land — you cannot build here.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHangingBreakByPlayer(HangingBreakByEntityEvent event) {
+        Player player = resolvePlayerDamager(event.getRemover());
+        if (player == null) {
+            return;
+        }
+        if (!claims.canBuild(player, event.getEntity().getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cClaimed land — you cannot build here.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityPlace(EntityPlaceEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        if (!claims.canBuild(player, event.getBlock().getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cClaimed land — you cannot build here.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onAnyDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player victim)) {
             return;
@@ -98,6 +180,13 @@ public final class ClaimListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
+        ClaimExplosionRules.Kind boom = ClaimExplosionRules.kindOf(event.getDamager());
+        if (boom != ClaimExplosionRules.Kind.NONE
+                && event.getEntity() instanceof ArmorStand stand
+                && !explosionAllowed(boom, stand.getLocation())) {
+            event.setCancelled(true);
+            return;
+        }
         Player attacker = resolvePlayerDamager(event.getDamager());
         if (attacker != null
                 && claims.getAt(attacker.getLocation()).isPresent()
@@ -245,30 +334,128 @@ public final class ClaimListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onExplode(EntityExplodeEvent event) {
-        Entity entity = event.getEntity();
-        boolean tnt = entity instanceof TNTPrimed;
-        boolean creeper = entity instanceof Creeper;
-        if (!tnt && !creeper) {
+    public void onNetherPortal(PlayerPortalEvent event) {
+        if (!blockClaimNetherPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
             return;
         }
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onNetherEntityPortal(EntityPortalEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        PlayerTeleportEvent.TeleportCause cause;
+        if (event.getPortalType() == org.bukkit.PortalType.NETHER) {
+            cause = PlayerTeleportEvent.TeleportCause.NETHER_PORTAL;
+        } else if (event.getPortalType() == org.bukkit.PortalType.ENDER) {
+            cause = PlayerTeleportEvent.TeleportCause.END_PORTAL;
+        } else if (event.getPortalType() == org.bukkit.PortalType.END_GATEWAY) {
+            cause = PlayerTeleportEvent.TeleportCause.END_GATEWAY;
+        } else {
+            cause = PlayerTeleportEvent.TeleportCause.UNKNOWN;
+        }
+        if (!blockClaimNetherPortal(player, event.getFrom(), cause)) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    /**
+     * Folia sometimes fires {@link PlayerTeleportEvent} without {@link PlayerPortalEvent}.
+     * Skip when already handled as a portal event subclass.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onNetherTeleport(PlayerTeleportEvent event) {
+        if (event instanceof PlayerPortalEvent) {
+            return;
+        }
+        if (!blockClaimNetherPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    private boolean blockClaimNetherPortal(
+            Player player, org.bukkit.Location from, PlayerTeleportEvent.TeleportCause cause) {
+        if (cause != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
+                && cause != PlayerTeleportEvent.TeleportCause.END_PORTAL
+                && cause != PlayerTeleportEvent.TeleportCause.END_GATEWAY) {
+            return false;
+        }
+        org.bukkit.Location probe = from != null ? from : player.getLocation();
+        if (claims.canUseNetherPortal(player, probe)) {
+            return false;
+        }
+        String kind = cause == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL ? "nether" : "end";
+        player.sendMessage("§cClaimed " + kind + " portal — only the owner and trusted players can use it.");
+        return true;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onExplosionPrime(ExplosionPrimeEvent event) {
+        ClaimExplosionRules.Kind kind = ClaimExplosionRules.kindOf(event.getEntity());
+        if (kind == ClaimExplosionRules.Kind.NONE) {
+            return;
+        }
+        // Stop the blast entirely when the fuse entity sits in protected claim land.
+        if (!explosionAllowed(kind, event.getEntity().getLocation())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onExplode(EntityExplodeEvent event) {
+        ClaimExplosionRules.Kind kind = ClaimExplosionRules.kindOf(event.getEntity());
+        if (kind == ClaimExplosionRules.Kind.NONE) {
+            return;
+        }
+        // Flag applies per-block: a creeper just outside still cannot crater claimed land.
         org.bukkit.Location origin = event.getLocation();
-        boolean originDenied = origin != null && !explosionAllowed(tnt, origin);
+        boolean originDenied = origin != null && !explosionAllowed(kind, origin);
+        boolean anyClaimBlockDenied = false;
         var blocks = event.blockList().iterator();
         while (blocks.hasNext()) {
             Block block = blocks.next();
-            if (block == null || !explosionAllowed(tnt, block.getLocation())) {
+            if (block == null || !explosionAllowed(kind, block.getLocation())) {
                 blocks.remove();
+                anyClaimBlockDenied = true;
             }
         }
-        if (originDenied) {
+        if (originDenied || (anyClaimBlockDenied && event.blockList().isEmpty())) {
             event.setCancelled(true);
             event.blockList().clear();
         }
     }
 
-    private boolean explosionAllowed(boolean tnt, org.bukkit.Location location) {
-        return tnt ? claims.isTntAllowed(location) : claims.isCreeperExplosionAllowed(location);
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onHangingBreakExplosion(HangingBreakEvent event) {
+        if (event.getCause() != HangingBreakEvent.RemoveCause.EXPLOSION) {
+            return;
+        }
+        Entity remover = event instanceof HangingBreakByEntityEvent byEntity
+                ? byEntity.getRemover() : null;
+        ClaimExplosionRules.Kind kind = ClaimExplosionRules.kindOf(remover);
+        if (kind == ClaimExplosionRules.Kind.NONE) {
+            // Unknown source — still honor default deny explosives in claims.
+            if (!claims.isCreeperExplosionAllowed(event.getEntity().getLocation())
+                    || !claims.isTntAllowed(event.getEntity().getLocation())) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+        if (!explosionAllowed(kind, event.getEntity().getLocation())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private boolean explosionAllowed(ClaimExplosionRules.Kind kind, org.bukkit.Location location) {
+        return switch (kind) {
+            case TNT -> claims.isTntAllowed(location);
+            case CREEPER -> claims.isCreeperExplosionAllowed(location);
+            case NONE -> true;
+        };
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -308,6 +495,25 @@ public final class ClaimListener implements Listener {
             return reason != null && isIntentionalSpawnReason(reason);
         } catch (Throwable ignored) {
             return false;
+        }
+    }
+
+    /**
+     * Non-players stepping on pressure plates — cancel so iron doors / redstone doors stay shut.
+     * Players use {@link PlayerInteractEvent} ({@link Action#PHYSICAL}) and are unaffected.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityPressurePlate(EntityInteractEvent event) {
+        Block block = event.getBlock();
+        if (block == null) {
+            return;
+        }
+        if (!ClaimPressurePlateRules.allow(
+                claims.config().claimsEnabled(),
+                claims.config().claimsMobsActivatePressurePlates(),
+                event.getEntity() instanceof Player,
+                ClaimPressurePlateRules.isPressurePlate(block.getType().name()))) {
+            event.setCancelled(true);
         }
     }
 

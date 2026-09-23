@@ -2,6 +2,7 @@ package com.yapcore.claims;
 
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,5 +42,13 @@ public interface ClaimLookup {
     /** Local (this server-id) claims currently loaded in memory. */
     default List<ClaimInfo> localClaims() {
         return List.of();
+    }
+
+    /**
+     * Whether the player may use a nether / End / YaP End-door / dungeon portal at this location.
+     * Wilderness and claims-offline → true. Claim default denies strangers.
+     */
+    default boolean canUsePortal(Player player, Location location) {
+        return true;
     }
 }

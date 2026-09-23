@@ -456,6 +456,23 @@ public final class RegionServiceImpl implements RegionService {
         return flagAt(location, RegionFlag.ARMOR_STAND) == FlagValue.ALLOW;
     }
 
+    /**
+     * Whether damaging tagged YaP NPCs is allowed here.
+     * Explicit {@link RegionFlag#NPC_DAMAGE}; when unset, inherits {@link RegionFlag#DAMAGE}.
+     * Outside any admin region, returns {@code false} (managed NPCs stay protected).
+     */
+    public boolean isNpcDamageAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return false;
+        }
+        FlagValue explicit = region.get().flags().get(RegionFlag.NPC_DAMAGE);
+        if (explicit != null) {
+            return explicit == FlagValue.ALLOW;
+        }
+        return resolve(region.get(), RegionFlag.DAMAGE) == FlagValue.ALLOW;
+    }
+
     public boolean isLeafDecayAllowed(Location location) {
         return flagAt(location, RegionFlag.LEAF_DECAY) == FlagValue.ALLOW;
     }

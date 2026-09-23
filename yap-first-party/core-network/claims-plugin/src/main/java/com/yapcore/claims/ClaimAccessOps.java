@@ -33,7 +33,11 @@ final class ClaimAccessOps {
         }
         Optional<Claim> claim = host.getAt(loc);
         if (claim.isEmpty()) {
-            return !host.config().claimsRequireClaimToBuild() || player.hasPermission("yapdata.claims.wilderness");
+            return ClaimBuildRules.allow(
+                    true, false, false,
+                    host.config().claimsRequireClaimToBuild(),
+                    player.hasPermission("yapdata.claims.wilderness"),
+                    false, false);
         }
         Claim c = claim.get();
         Optional<Boolean> factionBuild = factionBuildOverride(player, c);
@@ -43,18 +47,19 @@ final class ClaimAccessOps {
         if (!flagAllowsBuild(c, player)) {
             return false;
         }
-        if (c.taxFrozen()) {
-            return false;
-        }
-        Claim check = c;
+        boolean taxFrozen = c.taxFrozen();
         if (c.isSubdivision()) {
-            // parent frozen freezes subs
             Optional<Claim> parent = host.getTopLevelAt(loc);
             if (parent.isPresent() && parent.get().taxFrozen()) {
-                return false;
+                taxFrozen = true;
             }
         }
-        return hasTrust(check, player.getUniqueId(), ClaimRepository.TrustLevel.BUILD);
+        return ClaimBuildRules.allow(
+                true, false, true,
+                host.config().claimsRequireClaimToBuild(),
+                false,
+                taxFrozen,
+                hasTrust(c, player.getUniqueId(), ClaimRepository.TrustLevel.BUILD));
     }
 
     boolean canAccess(Player player, Location loc) {
@@ -298,6 +303,27 @@ final class ClaimAccessOps {
             return true;
         }
         return host.flags().resolveOrDefault(claim.get().id(), RegionFlag.USE) == FlagValue.ALLOW;
+    }
+
+    /**
+     * Nether / End / YaP End-door / dungeon portals inside claims.
+     * DENY (default) → owner / ACCESS+ trust / staff. ALLOW → anyone. Wilderness always allowed.
+     */
+    boolean canUseNetherPortal(Player player, Location loc) {
+        if (!host.config().claimsEnabled() || StaffBypass.land(player)) {
+            return true;
+        }
+        Optional<Claim> claim = host.getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        if (claim.get().taxFrozen() && !claim.get().owner().equals(player.getUniqueId())) {
+            return false;
+        }
+        FlagValue portal = host.flags().resolveOrDefault(claim.get().id(), RegionFlag.NETHER_PORTAL);
+        return ClaimFlagDecision.allowPlayerAction(
+                portal, false,
+                hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS));
     }
 
     private Optional<Boolean> factionContainerOverride(Player player, Claim claim) {

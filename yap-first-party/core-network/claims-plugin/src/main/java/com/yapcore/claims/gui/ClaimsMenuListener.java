@@ -44,6 +44,12 @@ public final class ClaimsMenuListener implements Listener {
             if (idStr == null) {
                 return;
             }
+            if ("expand".equals(idStr)) {
+                player.closeInventory();
+                var dir = com.yapcore.claims.ClaimExpandRules.fromYaw(player.getLocation().getYaw());
+                player.sendMessage(menus.claims.expandAdjacent(player, dir));
+                return;
+            }
             long id = Long.parseLong(idStr);
             var opt = menus.claims.repo().get(id);
             if (opt.isEmpty()) {

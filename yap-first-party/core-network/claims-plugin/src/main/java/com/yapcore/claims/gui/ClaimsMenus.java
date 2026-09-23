@@ -70,7 +70,13 @@ public final class ClaimsMenus {
                     modeTip,
                     costTip,
                     vertTip,
-                    "Inspect: stick · /claim claim"));
+                    "Inspect: stick · /claim claim · /claim expand"));
+            inv.setItem(5, icon(Material.COMPASS, "Expand adjacent",
+                    "Stand in your claim, face empty land",
+                    "/claim expand  — look direction",
+                    "/claim expand north|south|east|west",
+                    "Must touch land you already own"));
+            meta.put(5, "expand");
             int slot = 10;
             for (Claim c : claims.repo().listOwned(player.getUniqueId())) {
                 while (slot % 9 == 0 || slot % 9 == 8) {

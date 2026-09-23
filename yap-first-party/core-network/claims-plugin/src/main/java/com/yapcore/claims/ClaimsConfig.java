@@ -73,6 +73,11 @@ public final class ClaimsConfig {
     private double claimsTaxFreezeAmount = 50.0;
     private double claimsTaxAbandonAmount = 200.0;
     private final EnumMap<RegionFlag, FlagValue> claimDefaultFlags = new EnumMap<>(RegionFlag.class);
+    /**
+     * When false, non-players cannot power pressure plates (stops mobs opening iron doors).
+     * Players are unaffected. Server-wide while claims are enabled.
+     */
+    private boolean claimsMobsActivatePressurePlates = false;
 
     public ClaimsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -109,6 +114,7 @@ public final class ClaimsConfig {
 
         claimsEnabled = c.getBoolean("claims.enabled", true);
         claimsRequireClaimToBuild = c.getBoolean("claims.require-claim-to-build", false);
+        claimsMobsActivatePressurePlates = c.getBoolean("claims.mobs-activate-pressure-plates", false);
         claimsTool = parseMaterial(c.getString("claims.tool", "GOLDEN_SHOVEL"), Material.GOLDEN_SHOVEL);
         claimsInspectTool = parseMaterial(c.getString("claims.inspect-tool", "STICK"), Material.STICK);
         claimsMode = ClaimMode.parse(c.getString("claims.mode", "chunk"));
@@ -254,6 +260,11 @@ public final class ClaimsConfig {
         return claimsRequireClaimToBuild;
     }
 
+    /** When false, cancel non-player pressure-plate activation (doors stay closed to mobs). */
+    public boolean claimsMobsActivatePressurePlates() {
+        return claimsMobsActivatePressurePlates;
+    }
+
     public Material claimsTool() {
         return claimsTool;
     }
@@ -355,7 +366,7 @@ public final class ClaimsConfig {
 
     public FlagValue defaultClaimFlag(RegionFlag flag) {
         return claimDefaultFlags.getOrDefault(flag, switch (flag) {
-            case PVP, FIRE_SPREAD, TNT, CREEPER_EXPLOSION -> FlagValue.DENY;
+            case PVP, FIRE_SPREAD, TNT, CREEPER_EXPLOSION, NETHER_PORTAL -> FlagValue.DENY;
             default -> FlagValue.ALLOW;
         });
     }

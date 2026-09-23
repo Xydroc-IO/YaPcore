@@ -1,6 +1,7 @@
 package com.yapcore.claims.cmd;
 
 import com.yapcore.claims.Claim;
+import com.yapcore.claims.ClaimExpandRules;
 import com.yapcore.claims.ClaimService;
 import com.yapcore.claims.ClaimVisualizer;
 import com.yapcore.claims.TaxService;
@@ -73,6 +74,21 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                 }
                 case "claim", "chunk", "hereclaim" -> {
                     player.sendMessage(claims.claimChunkAt(player, player.getLocation()));
+                    yield true;
+                }
+                case "expand", "grow", "adj", "adjacent" -> {
+                    ClaimExpandRules.Dir dir;
+                    if (args.length >= 2) {
+                        var parsed = ClaimExpandRules.parseDir(args[1]);
+                        if (parsed.isEmpty()) {
+                            player.sendMessage("Usage: /claim expand [north|south|east|west]");
+                            yield true;
+                        }
+                        dir = parsed.get();
+                    } else {
+                        dir = ClaimExpandRules.fromYaw(player.getLocation().getYaw());
+                    }
+                    player.sendMessage(claims.expandAdjacent(player, dir));
                     yield true;
                 }
                 case "blocks", "slots", "limit" -> {
@@ -203,7 +219,7 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                     yield setClaimMessage(player, args);
                 }
                 default -> {
-                    player.sendMessage("Usage: /claim [claim|tool|show|slots|list|subdivide|here|abandon|trust|flag|message]");
+                    player.sendMessage("Usage: /claim [claim|expand|tool|show|slots|list|subdivide|here|abandon|trust|flag|message]");
                     yield true;
                 }
             };
@@ -326,8 +342,14 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(args[0], "claim", "chunk", "tool", "show", "borders", "slots", "blocks", "list", "subdivide", "mode",
+            return filter(args[0], "claim", "chunk", "expand", "grow", "tool", "show", "borders", "slots", "blocks", "list", "subdivide", "mode",
                     "tax", "paytax", "here", "abandon", "trust", "untrust", "flag", "message");
+        }
+        if (args.length == 2 && (args[0].equalsIgnoreCase("expand")
+                || args[0].equalsIgnoreCase("grow")
+                || args[0].equalsIgnoreCase("adj")
+                || args[0].equalsIgnoreCase("adjacent"))) {
+            return filter(args[1], "north", "south", "east", "west", "n", "s", "e", "w");
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("message")) {
             return filter(args[1], "set", "clear");

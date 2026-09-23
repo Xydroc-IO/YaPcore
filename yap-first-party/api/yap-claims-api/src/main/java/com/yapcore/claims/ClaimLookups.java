@@ -24,4 +24,11 @@ public final class ClaimLookups {
     public static boolean canSystemModify(org.bukkit.Location location) {
         return find().map(l -> l.canSystemModify(location)).orElse(true);
     }
+
+    /**
+     * Nether / End / YaP End-door / dungeon portal use. True when claims are offline or wilderness.
+     */
+    public static boolean canUsePortal(org.bukkit.entity.Player player, org.bukkit.Location location) {
+        return find().map(l -> l.canUsePortal(player, location)).orElse(true);
+    }
 }

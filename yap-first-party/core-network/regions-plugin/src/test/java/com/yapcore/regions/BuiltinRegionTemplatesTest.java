@@ -24,6 +24,7 @@ class BuiltinRegionTemplatesTest {
         assertEquals("adventure", spawn.gameMode());
         assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.PVP));
         assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.BUILD));
+        assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.NPC_DAMAGE));
         assertEquals("Welcome to spawn.", spawn.messages().get(RegionMessageKind.GREETING));
 
         BuiltinRegionTemplates.Preset wild = BuiltinRegionTemplates.get("wilderness");

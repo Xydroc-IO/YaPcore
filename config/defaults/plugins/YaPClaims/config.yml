@@ -27,6 +27,9 @@ claims:
   mode: chunk
   # Off = no claim-block budget; use max-claims slots instead
   use-claim-blocks: false
+  # false = mobs/animals cannot power pressure plates (iron doors stay shut). Players still can.
+  # Server-wide while claims are enabled. Set true for vanilla plate behavior.
+  mobs-activate-pressure-plates: false
   max-claims: 16
   # Horizontal plot size (64 → 64×64). Depth = blocks below claim Y; top = world max height.
   plot-size: 64
@@ -64,3 +67,6 @@ claims:
     item-pickup: allow
     tnt: deny
     creeper-explosion: deny
+    # deny = owner + /claim trust only; allow = anyone may use portals in the claim
+    # Covers nether, End, YaP End doors, and YaP dungeon portals
+    nether-portal: deny

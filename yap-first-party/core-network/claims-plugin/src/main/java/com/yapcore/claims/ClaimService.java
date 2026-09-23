@@ -332,6 +332,10 @@ public final class ClaimService {
         return access.canUse(player, loc);
     }
 
+    public boolean canUseNetherPortal(Player player, Location loc) {
+        return access.canUseNetherPortal(player, loc);
+    }
+
     /** Used by YaPFactions upkeep when a linked claim cannot pay. */
     public void setTaxFrozen(long claimId, boolean frozen) {
         for (Claim claim : local) {
@@ -403,16 +407,75 @@ public final class ClaimService {
             return "§cInvalid location.";
         }
         int size = Math.max(1, config.claimsPlotSize());
-        int minX = Math.floorDiv(loc.getBlockX(), size) * size;
-        int minZ = Math.floorDiv(loc.getBlockZ(), size) * size;
-        int maxX = minX + size - 1;
-        int maxZ = minZ + size - 1;
+        ClaimExpandRules.Plot plot = ClaimExpandRules.plotAt(loc.getBlockX(), loc.getBlockZ(), size);
         int maxY = loc.getWorld().getMaxHeight() - 1;
         int minY = Math.max(loc.getWorld().getMinHeight(), loc.getBlockY() - config.claimsPlotDepth());
         int area = size * size;
         pending.remove(player.getUniqueId());
         return creation.createTopLevel(player, loc.getWorld().getName(),
-                minX, maxX, minZ, maxZ, minY, maxY, area);
+                plot.minX(), plot.maxX(), plot.minZ(), plot.maxZ(), minY, maxY, area);
+    }
+
+    /**
+     * Claim the next grid plot in {@code dir} (or facing yaw). Must share an edge with land you own.
+     * Copies Y bounds from the touching owned claim so basements stay covered.
+     */
+    public String expandAdjacent(Player player, ClaimExpandRules.Dir dir) throws SQLException {
+        if (player == null || player.getWorld() == null) {
+            return "§cInvalid location.";
+        }
+        if (config.claimsMode() != ClaimsConfig.ClaimMode.CHUNK) {
+            return "§c/claim expand needs chunk/plot mode (claims.mode: chunk).";
+        }
+        int size = Math.max(1, config.claimsPlotSize());
+        Location feet = player.getLocation();
+        ClaimExpandRules.Plot here = ClaimExpandRules.plotAt(feet.getBlockX(), feet.getBlockZ(), size);
+        ClaimExpandRules.Plot target = ClaimExpandRules.adjacent(here, dir, size);
+
+        Claim neighbor = null;
+        synchronized (local) {
+            for (Claim c : local) {
+                if (c.isSubdivision() || !c.owner().equals(player.getUniqueId())) {
+                    continue;
+                }
+                if (!c.world().equals(feet.getWorld().getName())) {
+                    continue;
+                }
+                if (ClaimExpandRules.sharesEdgeOrOverlaps(
+                        c.minX(), c.maxX(), c.minZ(), c.maxZ(),
+                        target.minX(), target.maxX(), target.minZ(), target.maxZ())) {
+                    neighbor = c;
+                    break;
+                }
+            }
+        }
+        if (neighbor == null) {
+            return "§cNo owned claim touches the plot to the §f" + dir.label()
+                    + "§c. Stand in / next to your claim, face the empty plot, then §f/claim expand§c.";
+        }
+
+        // Already claimed (by anyone) — check XZ at mid-height of neighbor claim
+        int probeY = Math.max(neighbor.minY(), Math.min(neighbor.maxY(), feet.getBlockY()));
+        Location probe = new Location(feet.getWorld(),
+                target.centerX() + 0.5, probeY, target.centerZ() + 0.5);
+        Optional<Claim> existing = getAt(probe);
+        if (existing.isPresent()) {
+            Claim e = existing.get();
+            if (e.owner().equals(player.getUniqueId())) {
+                return "§eYou already own that plot (§f#" + e.id() + "§e).";
+            }
+            return "§cThat plot is already claimed (§f#" + e.id() + "§c).";
+        }
+
+        int area = size * size;
+        pending.remove(player.getUniqueId());
+        String msg = creation.createTopLevel(player, feet.getWorld().getName(),
+                target.minX(), target.maxX(), target.minZ(), target.maxZ(),
+                neighbor.minY(), neighbor.maxY(), area);
+        if (msg.startsWith("§aClaim")) {
+            return "§aExpanded §f" + dir.label() + "§a — " + msg.substring(2);
+        }
+        return msg;
     }
 
     public boolean abandon(Player player, Claim claim) throws SQLException {

@@ -1,6 +1,7 @@
 package com.yapcore.claims;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,14 @@ public final class ClaimLookupImpl implements ClaimLookup {
             out.add(toInfo(c));
         }
         return List.copyOf(out);
+    }
+
+    @Override
+    public boolean canUsePortal(Player player, Location location) {
+        if (!enabled() || player == null) {
+            return true;
+        }
+        return claims.canUseNetherPortal(player, location);
     }
 
     static ClaimInfo toInfo(Claim c) {

@@ -53,7 +53,7 @@ public final class BuiltinRegionTemplates {
     /** Safe spawn: no combat, building, hunger, or mobs. Doors still work. */
     private static Preset spawn() {
         return new Preset("spawn", "adventure", deny(
-                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.MOB_DAMAGE,
+                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.MOB_DAMAGE, RegionFlag.NPC_DAMAGE,
                 RegionFlag.BUILD, RegionFlag.INTERACT, RegionFlag.CHEST_ACCESS,
                 RegionFlag.FIRE_SPREAD, RegionFlag.MOB_SPAWNING, RegionFlag.MOB_ENTRY,
                 RegionFlag.ITEM_DROP, RegionFlag.ITEM_PICKUP,
@@ -69,7 +69,7 @@ public final class BuiltinRegionTemplates {
     /** Same protection as a saved hub pad: no PvP or building, hunger off, weather clear. */
     private static Preset hub() {
         return new Preset("hub", "adventure", deny(
-                RegionFlag.PVP, RegionFlag.MOB_DAMAGE,
+                RegionFlag.PVP, RegionFlag.MOB_DAMAGE, RegionFlag.NPC_DAMAGE,
                 RegionFlag.BUILD,
                 RegionFlag.FIRE_SPREAD, RegionFlag.MOB_SPAWNING, RegionFlag.MOB_ENTRY,
                 RegionFlag.TNT, RegionFlag.CREEPER_EXPLOSION,
@@ -101,7 +101,7 @@ public final class BuiltinRegionTemplates {
     /** Build freely. No PvP or mobs. */
     private static Preset creative() {
         Map<RegionFlag, FlagValue> flags = deny(
-                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.MOB_DAMAGE,
+                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.MOB_DAMAGE, RegionFlag.NPC_DAMAGE,
                 RegionFlag.MOB_SPAWNING, RegionFlag.MOB_ENTRY,
                 RegionFlag.TNT, RegionFlag.CREEPER_EXPLOSION, RegionFlag.FIRE_SPREAD);
         allow(flags, RegionFlag.BUILD, RegionFlag.INTERACT, RegionFlag.CHEST_ACCESS);
@@ -112,7 +112,7 @@ public final class BuiltinRegionTemplates {
     /** Shop plot: chests and doors work, no building or combat. */
     private static Preset market() {
         Map<RegionFlag, FlagValue> flags = deny(
-                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.BUILD,
+                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.NPC_DAMAGE, RegionFlag.BUILD,
                 RegionFlag.MOB_SPAWNING, RegionFlag.MOB_ENTRY,
                 RegionFlag.TNT, RegionFlag.CREEPER_EXPLOSION);
         allow(flags, RegionFlag.CHEST_ACCESS, RegionFlag.USE, RegionFlag.INTERACT);
