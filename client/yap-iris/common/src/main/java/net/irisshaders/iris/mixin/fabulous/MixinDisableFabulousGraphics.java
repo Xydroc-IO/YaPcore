@@ -1,6 +1,7 @@
 package net.irisshaders.iris.mixin.fabulous;
 
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.minecraft.client.GraphicsPreset;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -17,6 +18,13 @@ public class MixinDisableFabulousGraphics {
 	@Inject(method = "onResourceManagerReload", at = @At("HEAD"))
 	private void iris$disableFabulousGraphicsOnResourceReload(CallbackInfo ci) {
 		iris$disableFabulousGraphics();
+	}
+
+	@Inject(method = "onResourceManagerReload", at = @At("RETURN"))
+	private void iris$kickRendererAfterResources(CallbackInfo ci) {
+		if (Minecraft.getInstance().level != null) {
+			SodiumWorldKick.arm(8);
+		}
 	}
 
 	// This method is called whenever the user tries to change the graphics mode.

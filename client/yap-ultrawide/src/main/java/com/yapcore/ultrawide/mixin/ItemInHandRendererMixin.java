@@ -11,9 +11,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * When HUD Hor+ uses the world VFOV, scale + nudge the viewmodel so held items
- * stay on screen on extreme ultrawide (same NDC size as vanilla 70° HUD, pulled
- * inward from the bottom-right clip).
+ * Hor+ lowers the hand-camera VFOV, which drops held items onto the hotbar.
+ * Scale Y so hands, blocks, and items keep the vanilla 70° gap above it.
+ * A small X translate keeps the viewmodel on-screen on 32:9.
  */
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
@@ -29,6 +29,10 @@ public abstract class ItemInHandRendererMixin {
         float oy = YapUltrawide.viewmodelOffsetY();
         if (ox != 0.0f || oy != 0.0f) {
             poseStack.translate(ox, oy, 0.0f);
+        }
+        float vertical = YapUltrawide.viewmodelVerticalScale();
+        if (vertical != 1.0f) {
+            poseStack.scale(1.0f, vertical, 1.0f);
         }
         float scale = YapUltrawide.viewmodelScale();
         if (scale != 1.0f) {

@@ -35,18 +35,41 @@ public class PipelineManager {
 			pipelinesPerDimension.put(currentDimension, pipeline);
 			IrisVideoSettings.invalidateShadowDistanceCache();
 
-			if (WorldRenderingSettings.INSTANCE.isReloadRequired()) {
-				if (Minecraft.getInstance().levelExtractor != null) {
-					Minecraft.getInstance().levelExtractor.allChanged();
-				}
-
-				WorldRenderingSettings.INSTANCE.clearReloadRequired();
-			}
 		} else {
 			pipeline = pipelinesPerDimension.get(currentDimension);
 		}
 
+		// Title-screen pipeline creation used to clear this flag while Sodium had
+		// no world renderer, so the first in-world frame never rebuilt chunks.
+		// Reused overworld pipelines (the common join path) also skipped the check.
+		scheduleReloadOutsideFrame();
+
 		return pipeline;
+	}
+
+	/**
+	 * Sodium chunk meshes have to be rebuilt once the shader vertex format is in
+	 * place. {@code allChanged} during {@code LevelRenderer.render} destroys the
+	 * section manager mid-frame and the world stays blank until a later reload
+	 * (opening Sodium Video Settings). Queue it for the next client tick instead,
+	 * and leave the flag set when there is no world yet.
+	 */
+	private void scheduleReloadOutsideFrame() {
+		if (!WorldRenderingSettings.INSTANCE.isReloadRequired()) {
+			return;
+		}
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null || mc.levelExtractor == null) {
+			return;
+		}
+		WorldRenderingSettings.INSTANCE.clearReloadRequired();
+		mc.execute(() -> {
+			if (mc.level == null || mc.levelExtractor == null) {
+				WorldRenderingSettings.INSTANCE.markReloadRequired();
+				return;
+			}
+			mc.levelExtractor.allChanged();
+		});
 	}
 
 	@Nullable

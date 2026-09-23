@@ -16,6 +16,7 @@ import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,13 +182,19 @@ public final class YapPresenceClient implements ClientModInitializer {
         if (!text.regionMatches(true, 0, "SKIN|", 0, 5)) {
             return;
         }
-        // SKIN|<uuid>|CLEAR  OR  SKIN|<uuid>|<slim>|<url>|<geometryBase64>
+        // SKIN|<uuid>|CLEAR
+        // SKIN|INLINE|<uuid>|<slim>|<pngB64>|<geometryBase64>
+        // SKIN|<uuid>|<slim>|<url>|<geometryBase64>
         String[] parts = text.split("\\|", 5);
         if (parts.length < 3) {
             LOGGER.warn("Malformed SKIN payload");
             return;
         }
         try {
+            if ("INLINE".equalsIgnoreCase(parts[1].trim())) {
+                handleSkinInline(text);
+                return;
+            }
             UUID uuid = UUID.fromString(parts[1].trim());
             if ("CLEAR".equalsIgnoreCase(parts[2].trim())) {
                 PresenceSkinApplier.clear(uuid);
@@ -215,6 +222,36 @@ public final class YapPresenceClient implements ClientModInitializer {
                     uuid, slim, skin.hasRenderableGeometry());
         } catch (Exception e) {
             LOGGER.warn("Failed to parse presence SKIN: {}", e.toString());
+        }
+    }
+
+    private static void handleSkinInline(String text) {
+        // SKIN|INLINE|<uuid>|<slim>|<pngB64>|<geometryBase64>
+        String[] parts = text.split("\\|", 6);
+        if (parts.length < 5) {
+            LOGGER.warn("Malformed SKIN|INLINE payload");
+            return;
+        }
+        try {
+            UUID uuid = UUID.fromString(parts[2].trim());
+            boolean slim = "1".equals(parts[3].trim());
+            String pngB64 = parts[4].trim();
+            if (pngB64.isBlank()) {
+                PresenceSkinApplier.clear(uuid);
+                return;
+            }
+            byte[] png = Base64.getDecoder().decode(pngB64);
+            String geoRaw = parts.length >= 6 ? parts[5].trim() : "";
+            String geoJson = geoRaw.isEmpty()
+                    ? ""
+                    : new String(Base64.getDecoder().decode(geoRaw), StandardCharsets.UTF_8);
+            Identifier id = PresenceTextureCache.textureId(uuid);
+            PresenceTextureCache.registerBytesNow(id, png);
+            PresenceSkinStore.put(new PresenceSkin(uuid, slim, "", geoJson));
+            PresenceTextureCache.bindReady(uuid, id);
+            LOGGER.debug("Presence SKIN|INLINE applied for {} slim={} bytes={}", uuid, slim, png.length);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to parse presence SKIN|INLINE: {}", e.toString());
         }
     }
 

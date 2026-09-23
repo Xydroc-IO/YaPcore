@@ -72,14 +72,29 @@ public final class HorPlus {
     }
 
     /**
-     * Scale first-person hands so they keep vanilla on-screen size when the
-     * HUD camera uses world Hor+ VFOV instead of {@code hudVfov}.
-     *
-     * <p>NDC size is proportional to {@code 1 / tan(vfov / 2)}. Scaling the
-     * viewmodel by {@code tan(world/2) / tan(hud/2)} cancels the zoom so
-     * weapons stay on screen while sharing the world frustum (aim match).
+     * Uniform viewmodel scale. Under perspective this does not move or resize
+     * the hand (depth scales with the offset). Size on screen is
+     * {@link #viewmodelVerticalScale(float, float)}.
      */
     public static float viewmodelScale(float worldVfov, float hudVfov) {
+        return clampFovRatio(worldVfov, hudVfov, 0.55f, 1.45f);
+    }
+
+    /**
+     * Y-only viewmodel scale so held items keep the vanilla HUD height above
+     * the hotbar when the hand camera uses Hor+ VFOV.
+     *
+     * <p>A lower VFOV projects the vanilla arm offset ({@code y=-0.52},
+     * {@code z=-0.72}) toward the bottom of the frame. Uniform XYZ scale
+     * cannot lift it. Scaling Y by {@code tan(world/2) / tan(hud/2)} puts
+     * every vertex back at its 70° screen position, so hands, blocks, and
+     * items keep the usual gap above the hotbar.
+     */
+    public static float viewmodelVerticalScale(float worldVfov, float hudVfov) {
+        return clampFovRatio(worldVfov, hudVfov, 0.20f, 1.80f);
+    }
+
+    private static float clampFovRatio(float worldVfov, float hudVfov, float min, float max) {
         if (hudVfov <= 1.0f || worldVfov <= 1.0f) {
             return 1.0f;
         }
@@ -88,23 +103,18 @@ public final class HorPlus {
         }
         double scale = Math.tan(Math.toRadians(worldVfov) * 0.5)
                 / Math.tan(Math.toRadians(hudVfov) * 0.5);
-        // Allow >1 when world VFOV is wider than vanilla HUD (minVerticalFov floor).
-        return (float) Math.max(0.55, Math.min(1.45, scale));
+        return (float) Math.max(min, Math.min(max, scale));
     }
 
     /**
-     * Auto hand nudge for ultrawide: vanilla places the viewmodel bottom-right;
+     * Auto horizontal nudge: vanilla places the viewmodel bottom-right;
      * extreme aspect maps that offset further off-frame. {@code excess} is
-     * {@code aspect / (16/9) - 1} (≈1.0 on 7680×2160).
+     * {@code aspect / (16/9) - 1} (≈1.0 on 7680×2160). Vertical placement is
+     * {@link #viewmodelVerticalScale(float, float)}, not a Y translate.
      */
     public static float autoViewmodelOffsetX(float aspect) {
         float excess = Math.max(0.0f, aspect / REFERENCE_16_9 - 1.0f);
         return -0.28f * excess;
-    }
-
-    public static float autoViewmodelOffsetY(float aspect) {
-        float excess = Math.max(0.0f, aspect / REFERENCE_16_9 - 1.0f);
-        return 0.12f * excess;
     }
 
     /**

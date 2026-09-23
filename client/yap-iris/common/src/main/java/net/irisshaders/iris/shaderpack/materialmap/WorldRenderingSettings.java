@@ -48,6 +48,11 @@ public class WorldRenderingSettings {
 		reloadRequired = false;
 	}
 
+	/** Put the chunk-reload flag back if a deferred rebuild could not run. */
+	public void markReloadRequired() {
+		reloadRequired = true;
+	}
+
 	@Nullable
 	public Object2IntMap<BlockState> getBlockStateIds() {
 		return blockStateIds;

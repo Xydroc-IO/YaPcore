@@ -1,6 +1,7 @@
 package net.irisshaders.iris.mixin;
 
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -18,6 +19,7 @@ public class MixinMinecraft_PipelineManagement {
 	@Inject(method = "clearClientLevel", at = @At("HEAD"))
 	public void iris$trackLastDimensionOnLeave(Screen arg, CallbackInfo ci) {
 		Iris.lastDimension = Iris.getCurrentDimension();
+		SodiumWorldKick.onLeave();
 	}
 
 	/**
@@ -55,6 +57,11 @@ public class MixinMinecraft_PipelineManagement {
 			if (level != null) {
 				Iris.getPipelineManager().preparePipeline(Iris.getCurrentDimension());
 			}
+		}
+		if (level != null) {
+			// Same refresh as opening Video Settings, after the level (and any
+			// pack reload that follows) has settled. A later resource reload re-arms this.
+			SodiumWorldKick.arm(8);
 		}
 	}
 }

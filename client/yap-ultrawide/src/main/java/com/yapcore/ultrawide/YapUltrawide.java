@@ -16,6 +16,7 @@ public final class YapUltrawide implements ClientModInitializer {
     private static float lastAppliedVfov = HorPlus.VANILLA_HUD_FOV;
     private static float lastAspect = HorPlus.REFERENCE_16_9;
     private static float lastViewmodelScale = 1.0f;
+    private static float lastViewmodelVerticalScale = 1.0f;
     private static float lastViewmodelOffsetX;
     private static float lastViewmodelOffsetY;
     private static boolean lastHorPlusActive;
@@ -57,8 +58,8 @@ public final class YapUltrawide implements ClientModInitializer {
     /**
      * First-person hand camera. When Hor+ is active, use the <em>world</em>
      * VFOV so the held item shares the world frustum (block aim matches the
-     * crosshair). {@link #viewmodelScale()} then undoes the zoom so weapons
-     * stay on screen; offsets pull the hand back from the bottom-right edge.
+     * crosshair). {@link #viewmodelVerticalScale()} lifts held items back to
+     * the vanilla gap above the hotbar.
      */
     public static float applyHud(float vanillaHudFov) {
         if (!config.affectHudFov) {
@@ -78,9 +79,17 @@ public final class YapUltrawide implements ClientModInitializer {
         return lastAppliedVfov;
     }
 
-    /** Pose scale for {@code ItemInHandRenderer} when HUD Hor+ is on. */
+    /** Uniform pose scale for {@code ItemInHandRenderer} when HUD Hor+ is on. */
     public static float viewmodelScale() {
         return lastViewmodelScale;
+    }
+
+    /**
+     * Y-only pose scale. Restores the vanilla height of hands and held items
+     * above the hotbar when the hand camera uses Hor+ VFOV.
+     */
+    public static float viewmodelVerticalScale() {
+        return lastViewmodelVerticalScale;
     }
 
     /** View-space X nudge (negative = left) applied before hand submit. */
@@ -113,6 +122,7 @@ public final class YapUltrawide implements ClientModInitializer {
 
     private static void clearViewmodelAdjustments() {
         lastViewmodelScale = 1.0f;
+        lastViewmodelVerticalScale = 1.0f;
         lastViewmodelOffsetX = 0.0f;
         lastViewmodelOffsetY = 0.0f;
     }
@@ -125,8 +135,10 @@ public final class YapUltrawide implements ClientModInitializer {
         BandSettings band = config.forBand(lastBand);
         float scale = HorPlus.viewmodelScale(worldVfov, hudVfov) * band.viewmodelExtraScale;
         lastViewmodelScale = Math.max(0.55f, Math.min(1.55f, scale));
+        lastViewmodelVerticalScale = HorPlus.viewmodelVerticalScale(worldVfov, hudVfov);
         lastViewmodelOffsetX = HorPlus.autoViewmodelOffsetX(lastAspect) + band.viewmodelOffsetX;
-        lastViewmodelOffsetY = HorPlus.autoViewmodelOffsetY(lastAspect) + band.viewmodelOffsetY;
+        // Vertical placement is the Y scale. A translate here stacks on top of it.
+        lastViewmodelOffsetY = band.viewmodelOffsetY;
     }
 
     private static float computeHorPlus(float vanillaVerticalFov) {
@@ -168,10 +180,12 @@ public final class YapUltrawide implements ClientModInitializer {
         if (bandCfg.fovScale != 1.0f) {
             vfov *= bandCfg.fovScale;
         }
-        vfov = HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
+        // Floor first, then the horizontal cap. The other order lets minVerticalFov
+        // raise VFOV back up and reopen edge stretch after the cap.
         if (bandCfg.minVerticalFov > 0.0f && vfov < bandCfg.minVerticalFov) {
             vfov = bandCfg.minVerticalFov;
         }
+        vfov = HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
         lastHorPlusActive = true;
         return vfov;
     }

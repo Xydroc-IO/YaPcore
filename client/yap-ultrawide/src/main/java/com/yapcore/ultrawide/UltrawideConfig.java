@@ -20,7 +20,7 @@ import java.nio.file.Path;
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bumped when defaults change in a way that should rewrite existing configs. */
-    private static final int CURRENT_VERSION = 7;
+    private static final int CURRENT_VERSION = 9;
 
     public int configVersion = 0;
     public boolean enabled = true;
@@ -162,6 +162,35 @@ public final class UltrawideConfig {
                 affectHudFov = true;
                 YapUltrawide.LOGGER.info(
                         "v7: 32:9 viewmodel offset + extra scale (keep sword on screen)");
+            }
+            // v8: Y translate stacked on the projection and still left items on the hotbar.
+            // Vertical placement is now a Y scale. Clear the old lift so it does not double.
+            if (configVersion < 8) {
+                if (superwide_32_9 != null) {
+                    superwide_32_9.viewmodelOffsetY = 0.0f;
+                }
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.viewmodelOffsetY = 0.0f;
+                }
+                YapUltrawide.LOGGER.info(
+                        "v8: hand height follows FOV (vanilla gap above the hotbar)");
+            }
+            // v9: 100°/128° caps still left edge stretch, and the vertical floor
+            // could raise FOV again after the horizontal cap.
+            if (configVersion < 9) {
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.maxHorizontalFov = 90.0f;
+                    ultrawide_21_9.targetHorizontalFov = 90.0f;
+                    ultrawide_21_9.fovScale = 1.0f;
+                    ultrawide_21_9.minVerticalFov = 40.0f;
+                }
+                if (superwide_32_9 != null) {
+                    superwide_32_9.maxHorizontalFov = 105.0f;
+                    superwide_32_9.targetHorizontalFov = 105.0f;
+                    superwide_32_9.minVerticalFov = 38.0f;
+                }
+                YapUltrawide.LOGGER.info(
+                        "v9: HFOV caps 21:9=90° / 32:9=105° (cap wins over the vertical floor)");
             }
             configVersion = CURRENT_VERSION;
         }

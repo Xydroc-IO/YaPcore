@@ -2,6 +2,7 @@ package net.irisshaders.iris.mixin;
 
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.IrisVKOnly;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -25,6 +26,7 @@ public class MixinMinecraft_Keybinds {
 		Profiler.get().push("iris_keybinds");
 
 		Iris.handleKeybinds((Minecraft) (Object) this);
+		SodiumWorldKick.onClientTick((Minecraft) (Object) this);
 
 		Profiler.get().pop();
 	}

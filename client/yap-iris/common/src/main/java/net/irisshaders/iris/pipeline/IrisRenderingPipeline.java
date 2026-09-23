@@ -873,7 +873,9 @@ public class IrisRenderingPipeline implements WorldRenderingPipeline, ShaderRend
 			WorldRenderingSettings.INSTANCE.setBlockStateIds(
 				BlockMaterialMapping.createBlockStateIdMap(pack.getIdMap().getBlockProperties(), pack.getIdMap().getTagEntries()));
 			WorldRenderingSettings.INSTANCE.setBlockTypeIds(BlockMaterialMapping.createBlockTypeMap(pack.getIdMap().getBlockRenderTypeMap()));
-			Minecraft.getInstance().levelExtractor.allChanged();
+			// setBlock*Ids raises reloadRequired. PipelineManager applies that on the
+			// next tick — allChanged here runs inside LevelRenderer.render and leaves
+			// terrain, entities, and skins blank until Video Settings reloads Sodium.
 			initializedBlockIds = true;
 		}
 
