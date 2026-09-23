@@ -103,7 +103,7 @@ public final class PortalStructure {
 
     /** Try to find a complete frame that includes this block (frame material or keystone). */
     public Optional<Frame> findCompleteFrame(Block origin) {
-        if (origin.getType() != frameMaterial && origin.getType() != Material.END_PORTAL_FRAME) {
+        if (!isFrameBlock(origin.getType())) {
             return Optional.empty();
         }
         Optional<Frame> x = scan(origin, Axis.X);
@@ -127,7 +127,7 @@ public final class PortalStructure {
                 Frame frame = axis == Axis.X
                         ? new Frame(world, minAlong, minY, fixed, outerWidth, outerHeight, Axis.X)
                         : new Frame(world, fixed, minY, minAlong, outerWidth, outerHeight, Axis.Z);
-                if (isComplete(frame) && contains(frame, origin)) {
+                if (contains(frame, origin) && originOnPerimeter(frame, origin) && isComplete(frame)) {
                     return Optional.of(frame);
                 }
             }
@@ -137,16 +137,20 @@ public final class PortalStructure {
 
     public boolean isComplete(Frame frame) {
         for (Block b : frame.frameBlocks()) {
-            Material t = b.getType();
-            if (t != frameMaterial && t != Material.END_PORTAL_FRAME) {
+            int along = frame.axis() == Axis.X ? b.getX() : b.getZ();
+            if (isCorner(frame, along, b.getY())) {
+                // Corners optional (same as vanilla nether portals)
+                if (!b.getType().isAir() && !isFrameBlock(b.getType())) {
+                    return false;
+                }
+                continue;
+            }
+            if (!isFrameBlock(b.getType())) {
                 return false;
             }
         }
         for (Block b : frame.interiorBlocks()) {
-            Material t = b.getType();
-            // Overworld caves often leave CAVE_AIR — treat all air like empty opening
-            if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL
-                    && !isStainedGlass(t)) {
+            if (!isAllowedOpening(b.getType())) {
                 return false;
             }
         }
@@ -155,64 +159,108 @@ public final class PortalStructure {
 
     /**
      * Human-readable reason when {@link #findCompleteFrame} fails, or empty if complete.
+     * Scores only windows that mostly look like a portal so nearby terrain is not blamed.
      */
     public Optional<String> explainIncomplete(Block origin) {
-        if (origin.getType() != frameMaterial && origin.getType() != Material.END_PORTAL_FRAME) {
+        if (!isFrameBlock(origin.getType())) {
             return Optional.of("click a " + pretty(frameMaterial) + " frame block (you clicked "
                     + pretty(origin.getType()) + ")");
         }
+        String best = null;
+        int bestScore = Integer.MAX_VALUE;
         for (Axis axis : List.of(Axis.X, Axis.Z)) {
-            Optional<String> reason = explainScan(origin, axis);
-            if (reason.isPresent()) {
-                return reason;
+            World world = origin.getWorld();
+            int ox = origin.getX();
+            int oy = origin.getY();
+            int oz = origin.getZ();
+            for (int dy = 0; dy < outerHeight; dy++) {
+                for (int da = 0; da < outerWidth; da++) {
+                    int minY = oy - dy;
+                    int minAlong = (axis == Axis.X ? ox : oz) - da;
+                    int fixed = axis == Axis.X ? oz : ox;
+                    Frame frame = axis == Axis.X
+                            ? new Frame(world, minAlong, minY, fixed, outerWidth, outerHeight, Axis.X)
+                            : new Frame(world, fixed, minY, minAlong, outerWidth, outerHeight, Axis.Z);
+                    if (!contains(frame, origin) || !originOnPerimeter(frame, origin)) {
+                        continue;
+                    }
+                    int need = 0;
+                    int ok = 0;
+                    Block badFrame = null;
+                    Material badFrameMat = null;
+                    for (Block b : frame.frameBlocks()) {
+                        int along = frame.axis() == Axis.X ? b.getX() : b.getZ();
+                        if (isCorner(frame, along, b.getY())) {
+                            continue;
+                        }
+                        need++;
+                        if (isFrameBlock(b.getType())) {
+                            ok++;
+                        } else if (badFrame == null) {
+                            badFrame = b;
+                            badFrameMat = b.getType();
+                        }
+                    }
+                    if (need > 0 && ok * 2 < need) {
+                        continue;
+                    }
+                    Block badIn = null;
+                    Material badInMat = null;
+                    for (Block b : frame.interiorBlocks()) {
+                        if (!isAllowedOpening(b.getType())) {
+                            badIn = b;
+                            badInMat = b.getType();
+                            break;
+                        }
+                    }
+                    int missing = need - ok;
+                    int score = missing * 10 + (badIn != null ? 3 : 0);
+                    String msg;
+                    if (badIn != null) {
+                        msg = "clear " + pretty(badInMat) + " at " + badIn.getX() + "," + badIn.getY()
+                                + "," + badIn.getZ() + " inside the portal";
+                    } else if (badFrame != null) {
+                        msg = "replace " + pretty(badFrameMat) + " at " + badFrame.getX() + ","
+                                + badFrame.getY() + "," + badFrame.getZ() + " with " + pretty(frameMaterial);
+                    } else {
+                        continue;
+                    }
+                    if (score < bestScore) {
+                        bestScore = score;
+                        best = msg;
+                    }
+                }
             }
         }
-        return Optional.of("need exact " + outerWidth + "×" + outerHeight + " "
-                + pretty(frameMaterial) + " with empty "
-                + (outerWidth - 2) + "×" + (outerHeight - 2) + " opening");
+        if (best != null) {
+            return Optional.of(best);
+        }
+        return Optional.of("build a hollow " + pretty(frameMaterial) + " ring like a nether portal "
+                + "(about " + outerWidth + "×" + outerHeight + "), clear the middle, then eye the frame");
     }
 
-    private Optional<String> explainScan(Block origin, Axis axis) {
-        World world = origin.getWorld();
-        int ox = origin.getX();
-        int oy = origin.getY();
-        int oz = origin.getZ();
-        String best = null;
-        for (int dy = 0; dy < outerHeight; dy++) {
-            for (int da = 0; da < outerWidth; da++) {
-                int minY = oy - dy;
-                int minAlong = (axis == Axis.X ? ox : oz) - da;
-                int fixed = axis == Axis.X ? oz : ox;
-                Frame frame = axis == Axis.X
-                        ? new Frame(world, minAlong, minY, fixed, outerWidth, outerHeight, Axis.X)
-                        : new Frame(world, fixed, minY, minAlong, outerWidth, outerHeight, Axis.Z);
-                if (!contains(frame, origin)) {
-                    continue;
-                }
-                for (Block b : frame.frameBlocks()) {
-                    Material t = b.getType();
-                    if (t != frameMaterial && t != Material.END_PORTAL_FRAME) {
-                        best = "frame hole at " + b.getX() + "," + b.getY() + "," + b.getZ()
-                                + " is " + pretty(t) + " (want " + pretty(frameMaterial) + ")";
-                        break;
-                    }
-                }
-                if (best != null) {
-                    continue;
-                }
-                for (Block b : frame.interiorBlocks()) {
-                    Material t = b.getType();
-                    if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL
-                            && !isStainedGlass(t)) {
-                        return Optional.of("opening blocked at " + b.getX() + "," + b.getY() + "," + b.getZ()
-                                + " by " + pretty(t) + " — clear the inner "
-                                + (outerWidth - 2) + "×" + (outerHeight - 2));
-                    }
-                }
-                return Optional.empty();
-            }
-        }
-        return best == null ? Optional.empty() : Optional.of(best);
+    private boolean isFrameBlock(Material t) {
+        return t == frameMaterial || t == Material.END_PORTAL_FRAME;
+    }
+
+    private boolean isAllowedOpening(Material t) {
+        return t.isAir() || t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t);
+    }
+
+    private static boolean isCorner(Frame frame, int along, int y) {
+        boolean a = along == frame.minAlong() || along == frame.maxAlong();
+        boolean v = y == frame.minY() || y == frame.maxY();
+        return a && v;
+    }
+
+    private static boolean originOnPerimeter(Frame frame, Block origin) {
+        int along = frame.axis() == Axis.X ? origin.getX() : origin.getZ();
+        int y = origin.getY();
+        boolean onAlong = along == frame.minAlong() || along == frame.maxAlong();
+        boolean onY = y == frame.minY() || y == frame.maxY();
+        boolean inAlong = along >= frame.minAlong() && along <= frame.maxAlong();
+        boolean inY = y >= frame.minY() && y <= frame.maxY();
+        return inAlong && inY && (onAlong || onY);
     }
 
     private static String pretty(Material material) {
@@ -265,28 +313,53 @@ public final class PortalStructure {
                 && block.getZ() <= frame.maxAlong();
     }
 
+    /**
+     * Opens the portal so players can walk through. Solid config materials (e.g. stained glass)
+     * are replaced with air — the lime ItemDisplay provides the look without blocking movement.
+     */
     public void fillInterior(Frame frame) {
+        Material fill = walkableFill();
         for (Block b : frame.interiorBlocks()) {
-            b.setType(interiorMaterial, false);
-            if (interiorMaterial == Material.NETHER_PORTAL && b.getBlockData() instanceof Orientable orientable) {
+            b.setType(fill, false);
+            if (fill == Material.NETHER_PORTAL && b.getBlockData() instanceof Orientable orientable) {
                 orientable.setAxis(frame.axis());
                 b.setBlockData(orientable, false);
             }
         }
     }
 
+    /** Ensure an already-lit frame is walkable (repairs old solid-glass fills). */
+    public void ensureWalkable(Frame frame) {
+        for (Block b : frame.interiorBlocks()) {
+            if (b.getType().isSolid()) {
+                fillInterior(frame);
+                return;
+            }
+        }
+    }
+
+    private Material walkableFill() {
+        // Solid blocks (stained glass, etc.) block walk-through — leave air for the disc overlay.
+        if (interiorMaterial.isAir() || !interiorMaterial.isSolid()) {
+            return interiorMaterial == Material.AIR ? Material.AIR : interiorMaterial;
+        }
+        return Material.AIR;
+    }
+
     public void clearInterior(Frame frame) {
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
-            if (t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t)) {
-                b.setType(Material.AIR, false);
+            if (t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t) || t.isAir()) {
+                if (!t.isAir()) {
+                    b.setType(Material.AIR, false);
+                }
             }
         }
     }
 
     public boolean isInteriorBlock(Block block) {
         Material t = block.getType();
-        return t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t);
+        return t.isAir() || t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t);
     }
 
     private static boolean isStainedGlass(Material t) {

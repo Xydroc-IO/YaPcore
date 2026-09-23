@@ -153,6 +153,8 @@ public final class DungeonListener implements Listener {
         if (keystone.isPresent()) {
             Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
             if (frame.isPresent() && structure.contains(frame.get(), block)) {
+                structure.ensureWalkable(frame.get());
+                DungeonPortalVisuals.spawnFace(frame.get());
                 if (used.getType() == config.structureActivateItem()) {
                     event.setCancelled(true);
                     player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
@@ -421,6 +423,10 @@ public final class DungeonListener implements Listener {
         // Lit crying frame without YaP keystone still must not go to the Nether
         boolean keyed = structureTags.isKeystone(frame.get().keystone())
                 || structureTags.findNearbyKeystone(frame.get().keystone(), 1).isPresent();
+        if (keyed) {
+            structure.ensureWalkable(frame.get());
+            DungeonPortalVisuals.spawnFace(frame.get());
+        }
         if (!keyed) {
             player.sendMessage("§eDungeon frame detected. §7Right-click the frame with an §fEnder Eye §7to activate.");
             return true;

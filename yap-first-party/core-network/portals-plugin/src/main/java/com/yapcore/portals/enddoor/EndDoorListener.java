@@ -95,6 +95,7 @@ public final class EndDoorListener implements Listener {
             Optional<EndDoorStructure.Frame> frame = tags.frameFromKeystone(keystone.get());
             if (frame.isPresent() && structure.contains(frame.get(), block)) {
                 // Already lit — walking in handles travel; eye click is a no-op tip.
+                structure.ensureWalkable(frame.get());
                 if (used.getType() == config.endDoorActivateItem()) {
                     event.setCancelled(true);
                     player.sendMessage("§7End door is active — walk through to enter The End.");
@@ -281,6 +282,7 @@ public final class EndDoorListener implements Listener {
         if (frame.isEmpty()) {
             return false;
         }
+        structure.ensureWalkable(frame.get());
         return structure.contains(frame.get(), block)
                 || structure.contains(frame.get(), block.getRelative(0, -1, 0));
     }

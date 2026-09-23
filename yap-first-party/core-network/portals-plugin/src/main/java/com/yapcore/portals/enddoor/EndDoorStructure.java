@@ -345,14 +345,36 @@ public final class EndDoorStructure {
                 && block.getZ() <= frame.maxAlong();
     }
 
+    /**
+     * Solid config interiors (stained glass) block walk-through — use nether portal blocks instead
+     * so move/portal events fire and EndDoorListener can hijack travel to The End.
+     */
     public void fillInterior(Frame frame) {
+        Material fill = walkableFill();
         for (Block b : frame.interiorBlocks()) {
-            b.setType(interiorMaterial, false);
-            if (interiorMaterial == Material.NETHER_PORTAL && b.getBlockData() instanceof Orientable orientable) {
+            b.setType(fill, false);
+            if (fill == Material.NETHER_PORTAL && b.getBlockData() instanceof Orientable orientable) {
                 orientable.setAxis(frame.axis());
                 b.setBlockData(orientable, false);
             }
         }
+    }
+
+    /** Repair already-lit End doors that were filled with solid glass. */
+    public void ensureWalkable(Frame frame) {
+        for (Block b : frame.interiorBlocks()) {
+            if (b.getType().isSolid()) {
+                fillInterior(frame);
+                return;
+            }
+        }
+    }
+
+    private Material walkableFill() {
+        if (interiorMaterial.isAir() || !interiorMaterial.isSolid()) {
+            return interiorMaterial == Material.AIR ? Material.NETHER_PORTAL : interiorMaterial;
+        }
+        return Material.NETHER_PORTAL;
     }
 
     public void clearInterior(Frame frame) {
