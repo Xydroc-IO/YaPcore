@@ -74,11 +74,12 @@ Same-server pads (target = this `server-id`) teleport locally — no Link Connec
 On survival (same Folia world as `world_the_end`), players can build a **vertical** End portal:
 
 1. Build a standing **hollow obsidian ring** like a nether portal (about **4×5**, corners optional) — not crying obsidian
-2. **Clear the middle** (no water/stone/torches in the opening)
+2. **Clear the middle** (air or cave air only — no water/stone/torches in the opening)
 3. Right-click any **obsidian** frame block with an **Ender Eye** (main or off hand)
-4. Walk through → teleport to The End spawn on this server
+4. The opening fills with **black stained glass** (not a real nether-portal block) so Folia never starts a Nether hop
+5. Walk through → teleport to The End spawn on this server
 
-If lighting fails, chat now names the real problem (e.g. clear water inside) instead of nearby terrain.
+If lighting fails, chat names the real problem (e.g. clear water inside) instead of nearby terrain.
 
 Claimed doors are **private by default** (same flag as nether portals):
 
@@ -86,7 +87,7 @@ Claimed doors are **private by default** (same flag as nether portals):
 /claim flag set nether-portal allow
 ```
 
-Config: `end-doors` in `plugins/YaPPortals/config.yml`. Dungeon base portals use **crying obsidian** frames so they do not collide with End doors; walk-through opens the dungeon level picker and does not send you to the Nether.
+Config: `end-doors` in `plugins/YaPPortals/config.yml` (`interior: BLACK_STAINED_GLASS`). Dungeon base portals use **crying obsidian** frames so they do not collide with End doors; walk-through opens the dungeon level picker and does not send you to the Nether.
 
 Vanilla flat End portals still work; those in claims are gated the same way.
 

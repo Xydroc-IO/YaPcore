@@ -2,8 +2,10 @@ package com.yapcore.portals;
 
 import com.yapcore.portals.cmd.PortalCommands;
 import com.yapcore.portals.enddoor.EndDoorListener;
+import com.yapcore.portals.enddoor.EndDoorRegistry;
 import com.yapcore.portals.enddoor.EndDoorStructure;
 import com.yapcore.portals.enddoor.EndDoorTags;
+import com.yapcore.portals.enddoor.EndDoorVisuals;
 import com.yapcore.portals.listener.PortalArrivalListener;
 import com.yapcore.portals.listener.PortalMoveListener;
 import com.yapcore.portals.listener.PortalPhysicsListener;
@@ -70,6 +72,20 @@ public final class PortalsPlugin extends JavaPlugin {
             EndDoorTags endTags = new EndDoorTags(this);
             getServer().getPluginManager().registerEvents(
                     new EndDoorListener(this, config, endStructure, endTags, service.cooldown()), this);
+            final int[] endPulse = {0};
+            YapSched.globalTimer(this, () -> {
+                if (EndDoorRegistry.all().isEmpty()) {
+                    return;
+                }
+                float spin = (float) ((endPulse[0]++ % 10) * (Math.PI * 2.0 / 10.0));
+                for (var frame : EndDoorRegistry.all()) {
+                    int midAlong = frame.minAlong() + (frame.sizeAlong() / 2);
+                    int midX = frame.axis() == org.bukkit.Axis.X ? midAlong : frame.fixed();
+                    int midZ = frame.axis() == org.bukkit.Axis.X ? frame.fixed() : midAlong;
+                    YapSched.region(this, frame.world(), midX, midZ,
+                            () -> EndDoorVisuals.spin(frame, spin));
+                }
+            }, 20L, 5L);
             getLogger().info("End doors enabled — build=" + EndDoorListener.BUILD
                     + " frame=" + config.endDoorFrame()
                     + " " + config.endDoorWidth() + "x" + config.endDoorHeight()

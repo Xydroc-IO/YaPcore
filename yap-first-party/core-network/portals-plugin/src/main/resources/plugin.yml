@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Fleet walk-through portals — BungeeCord Connect via YaP Link
 website: https://github.com/yaplabs
-softdepend: [YaPNpcs, YaPPlayerData, YaPEssentials, YaPClaims]
+softdepend: [YaPNpcs, YaPPlayerData, YaPEssentials, YaPClaims, YaPWorld]
 commands:
   portal:
     description: Fleet portal admin

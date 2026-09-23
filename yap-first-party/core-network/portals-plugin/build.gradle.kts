@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":yap-sched"))
     compileOnly(project(":yap-playerdata-api"))
     compileOnly(project(":yap-claims-api"))
+    // WorldServices is reflected at runtime (soft); no compile dep required
     implementation(project(":yap-messages-api"))
     implementation(project(":yap-portals-api"))
 

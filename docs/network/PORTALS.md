@@ -30,9 +30,9 @@ alone.
 
 YaPPortals also supports **vertical End doors** on the same Folia backend as
 `world_the_end`: build a standing 4×5 obsidian frame, right-click with an Ender Eye,
-walk through → End spawn. Claimed doors use the same private-by-default
-`nether-portal` / `portal` claim flag as vanilla nether portals. See
-[yapportals.md](../how-to/plugins/yapportals.md).
+fill with **black stained glass** (not `NETHER_PORTAL`), walk through → End spawn.
+Claimed doors use the same private-by-default `nether-portal` / `portal` claim flag
+as vanilla nether portals. See [yapportals.md](../how-to/plugins/yapportals.md).
 
 ## Spawn arrival
 

@@ -24,7 +24,7 @@ connect:
 end-doors:
   enabled: true
   frame: OBSIDIAN
-  interior: NETHER_PORTAL
+  interior: BLACK_STAINED_GLASS
   activate-item: ENDER_EYE
   width: 4
   height: 5
