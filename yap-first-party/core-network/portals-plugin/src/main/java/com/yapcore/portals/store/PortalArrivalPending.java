@@ -59,6 +59,8 @@ public final class PortalArrivalPending {
         PortalArrival mode = arrival == null ? PortalArrival.SPAWN : arrival;
         Optional<Path> dir = pendingDir();
         if (dir.isEmpty()) {
+            log.warning("Portal arrival mark skipped for " + uuid
+                    + " — cannot resolve YaP root (pending-spawn)");
             return;
         }
         try {
@@ -74,8 +76,11 @@ public final class PortalArrivalPending {
                         + "\n" + mode.name().toLowerCase(Locale.ROOT)
                         + "\n" + System.currentTimeMillis();
             }
-            Files.writeString(dir.get().resolve(uuid.toString()), body, StandardCharsets.UTF_8,
+            Path file = dir.get().resolve(uuid.toString());
+            Files.writeString(file, body, StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+            log.info("Portal arrival marked " + uuid + " → " + targetServer.trim().toLowerCase(Locale.ROOT)
+                    + " (" + mode.name().toLowerCase(Locale.ROOT) + ") at " + file);
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to mark portal arrival for " + uuid, e);
         }
@@ -83,6 +88,7 @@ public final class PortalArrivalPending {
 
     /**
      * If this player has a pending arrival for {@code thisServerId}, consume and return it.
+     * Leaves the file in place when the target does not match this backend (another JVM may own it).
      */
     public Optional<ArrivalRequest> consume(UUID uuid, String thisServerId) {
         if (uuid == null || thisServerId == null) {
@@ -90,6 +96,8 @@ public final class PortalArrivalPending {
         }
         Optional<Path> dir = pendingDir();
         if (dir.isEmpty()) {
+            log.warning("Portal arrival consume skipped for " + uuid
+                    + " — cannot resolve YaP root (pending-spawn)");
             return Optional.empty();
         }
         Path file = dir.get().resolve(uuid.toString());
@@ -98,9 +106,9 @@ public final class PortalArrivalPending {
         }
         try {
             String body = Files.readString(file, StandardCharsets.UTF_8).trim();
-            Files.deleteIfExists(file);
             String[] parts = body.split("\\R");
-            if (parts.length == 0) {
+            if (parts.length == 0 || parts[0].isBlank()) {
+                Files.deleteIfExists(file);
                 return Optional.empty();
             }
             String target = parts[0].trim().toLowerCase(Locale.ROOT);
@@ -133,11 +141,15 @@ public final class PortalArrivalPending {
                 }
             }
             if (markedAt > 0L && System.currentTimeMillis() - markedAt > TTL_MS) {
+                Files.deleteIfExists(file);
+                log.info("Portal arrival expired for " + uuid + " (target was " + target + ")");
                 return Optional.empty();
             }
             if (!thisServerId.trim().equalsIgnoreCase(target)) {
+                // Wrong backend read the shared pending file — leave it for the real destination.
                 return Optional.empty();
             }
+            Files.deleteIfExists(file);
             return Optional.of(new ArrivalRequest(arrival, homeName));
         } catch (IOException e) {
             log.log(Level.WARNING, "Failed to consume portal arrival for " + uuid, e);

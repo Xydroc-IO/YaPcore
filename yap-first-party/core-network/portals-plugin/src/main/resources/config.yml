@@ -20,3 +20,16 @@ messages:
 connect:
   # Legacy channel id — YaP Link server-selector accepts BungeeCord + bungeecord:main
   channel: BungeeCord
+
+# Player-built vertical End doors (4×5 obsidian + Ender Eye → world_the_end).
+# Claim flag nether-portal / portal gates use (default private).
+# Dungeon base portals use crying obsidian — no frame clash with End doors.
+end-doors:
+  enabled: true
+  frame: OBSIDIAN
+  interior: NETHER_PORTAL
+  activate-item: ENDER_EYE
+  width: 4
+  height: 5
+  end-world: world_the_end
+  cooldown-seconds: 3

@@ -26,6 +26,14 @@ Existing pads are repainted on `/portal reload` or plugin enable. Fill only repl
 **air, nether portal, and stained glass** — signs and solid builds in the volume are left
 alone.
 
+## Player-built End doors
+
+YaPPortals also supports **vertical End doors** on the same Folia backend as
+`world_the_end`: build a standing 4×5 obsidian frame, right-click with an Ender Eye,
+walk through → End spawn. Claimed doors use the same private-by-default
+`nether-portal` / `portal` claim flag as vanilla nether portals. See
+[yapportals.md](../how-to/plugins/yapportals.md).
+
 ## Spawn arrival
 
 Default landing is **server spawn** (`/setspawn` via YaPEssentials, else world spawn):
@@ -33,6 +41,9 @@ Default landing is **server spawn** (`/setspawn` via YaPEssentials, else world s
 ```text
 # Hub → survival spawn (arrival defaults to spawn — no setarrival needed)
 /portal create to-survival survival lime
+
+# Hub → factions
+/portal create to-factions factions orange
 
 # Same-server pad that warps to this backend's spawn
 /portal create to-spawn survival cyan

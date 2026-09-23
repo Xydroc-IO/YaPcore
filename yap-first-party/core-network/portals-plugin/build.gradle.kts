@@ -22,11 +22,12 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
     compileOnly(project(":yap-playerdata-api"))
+    compileOnly(project(":yap-claims-api"))
     implementation(project(":yap-messages-api"))
     implementation(project(":yap-portals-api"))
 
     testImplementation(project(":yap-portals-api"))
-    testCompileOnly("io.papermc.paper:paper-api:$paperApi")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

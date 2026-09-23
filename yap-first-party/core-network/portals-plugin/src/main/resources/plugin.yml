@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Fleet walk-through portals — BungeeCord Connect via YaP Link
 website: https://github.com/yaplabs
-softdepend: [YaPNpcs, YaPPlayerData, YaPEssentials]
+softdepend: [YaPNpcs, YaPPlayerData, YaPEssentials, YaPClaims]
 commands:
   portal:
     description: Fleet portal admin
@@ -16,6 +16,12 @@ commands:
 permissions:
   yapportals.use:
     description: Use fleet portals
+    default: true
+  yapportals.enddoor.use:
+    description: Walk through player-built End doors
+    default: true
+  yapportals.enddoor.build:
+    description: Light a built End door with an Ender Eye
     default: true
   yapportals.admin:
     description: Create and manage fleet portals

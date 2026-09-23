@@ -17,6 +17,9 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * After a fleet portal Connect, land the player on this backend's spawn,
@@ -24,10 +27,15 @@ import java.util.Optional;
  */
 public final class PortalArrivalListener implements Listener {
 
+    private static final long FIRST_DELAY_TICKS = 30L;
+    private static final long RETRY_DELAY_TICKS = 20L;
+    private static final int MAX_ATTEMPTS = 8;
+
     private final JavaPlugin plugin;
     private final PortalsConfig config;
     private final PortalArrivalPending pending;
     private final PortalServiceImpl portals;
+    private final ConcurrentHashMap<UUID, Boolean> applying = new ConcurrentHashMap<>();
 
     public PortalArrivalListener(JavaPlugin plugin, PortalsConfig config,
                                  PortalArrivalPending pending, PortalServiceImpl portals) {
@@ -61,22 +69,44 @@ public final class PortalArrivalListener implements Listener {
                 return;
             }
         }
-        YapSched.entityLater(plugin, player, () -> {
-            if (!player.isOnline()) {
-                return;
-            }
+        UUID uuid = player.getUniqueId();
+        if (applying.putIfAbsent(uuid, Boolean.TRUE) != null) {
+            return;
+        }
+        AtomicInteger attempt = new AtomicInteger(0);
+        scheduleAttempt(player, req, attempt);
+    }
+
+    private void scheduleAttempt(Player player, PortalArrivalPending.ArrivalRequest req,
+                                 AtomicInteger attempt) {
+        long delay = attempt.get() == 0 ? FIRST_DELAY_TICKS : RETRY_DELAY_TICKS;
+        YapSched.entityLater(plugin, player, () -> runAttempt(player, req, attempt), delay);
+    }
+
+    private void runAttempt(Player player, PortalArrivalPending.ArrivalRequest req,
+                            AtomicInteger attempt) {
+        if (!player.isOnline()) {
+            applying.remove(player.getUniqueId());
+            return;
+        }
+        int n = attempt.incrementAndGet();
+        if (!playerDataReady(player) && n < MAX_ATTEMPTS) {
+            scheduleAttempt(player, req, attempt);
+            return;
+        }
+        PortalArrival mode = req.arrival();
+        String homeName = req.homeName();
+        try {
             if (mode == PortalArrival.HOME && tryPlayerHome(player, homeName)) {
                 plugin.getLogger().info("Portal arrival " + player.getName() + " → "
                         + config.serverId() + " home " + homeName);
-                portals.armJoinGrace(player.getUniqueId());
-                portals.seedInsideFromLocation(player);
+                finishArrival(player);
                 return;
             }
             if (mode == PortalArrival.RTP && tryEssentialsRtp(player)) {
                 plugin.getLogger().info("Portal arrival " + player.getName() + " → "
                         + config.serverId() + " rtp");
-                portals.armJoinGrace(player.getUniqueId());
-                portals.seedInsideFromLocation(player);
+                finishArrival(player);
                 return;
             }
             if (mode == PortalArrival.HOME) {
@@ -85,28 +115,78 @@ public final class PortalArrivalListener implements Listener {
             }
             Location spawn = resolveSpawn(player);
             if (spawn == null || spawn.getWorld() == null) {
+                if (n < MAX_ATTEMPTS) {
+                    scheduleAttempt(player, req, attempt);
+                    return;
+                }
                 plugin.getLogger().warning("Portal arrival for " + player.getName()
                         + " — no spawn resolved on " + config.serverId());
+                applying.remove(player.getUniqueId());
                 return;
             }
             plugin.getLogger().info("Portal arrival " + player.getName() + " → "
                     + config.serverId() + " spawn "
-                    + spawn.getBlockX() + "," + spawn.getBlockY() + "," + spawn.getBlockZ());
-            player.teleportAsync(spawn).thenAccept(ok -> {
+                    + spawn.getBlockX() + "," + spawn.getBlockY() + "," + spawn.getBlockZ()
+                    + " (attempt " + n + ")");
+            Location dest = spawn;
+            player.teleportAsync(dest).thenAccept(ok -> {
                 if (!Boolean.TRUE.equals(ok) || !player.isOnline()) {
+                    if (n < MAX_ATTEMPTS) {
+                        YapSched.entity(plugin, player, () -> scheduleAttempt(player, req, attempt));
+                        return;
+                    }
+                    applying.remove(player.getUniqueId());
                     return;
                 }
                 YapSched.entity(plugin, player, () -> {
                     if (!player.isOnline()) {
+                        applying.remove(player.getUniqueId());
                         return;
+                    }
+                    // Re-assert spawn once more after PlayerData unfreeze / chunk attach.
+                    Location again = resolveSpawn(player);
+                    if (again != null && again.getWorld() != null) {
+                        player.teleportAsync(again);
                     }
                     player.sendMessage("§7Arrived at §f" + config.serverId() + " §7spawn.");
                     portals.visuals().playArrive(player);
-                    portals.armJoinGrace(player.getUniqueId());
-                    portals.seedInsideFromLocation(player);
+                    finishArrival(player);
                 });
             });
-        }, 25L);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Portal arrival failed for " + player.getName()
+                    + ": " + e.getMessage());
+            if (n < MAX_ATTEMPTS) {
+                scheduleAttempt(player, req, attempt);
+            } else {
+                applying.remove(player.getUniqueId());
+            }
+        }
+    }
+
+    private void finishArrival(Player player) {
+        portals.armJoinGrace(player.getUniqueId());
+        portals.seedInsideFromLocation(player);
+        applying.remove(player.getUniqueId());
+    }
+
+    /** Prefer waiting until YaPPlayerData has applied the profile (avoids last-logout overwrite). */
+    private static boolean playerDataReady(Player player) {
+        Plugin pd = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
+        if (pd == null || !pd.isEnabled()) {
+            return true;
+        }
+        try {
+            Object sync = pd.getClass().getMethod("sync").invoke(pd);
+            if (sync == null) {
+                return true;
+            }
+            Object ready = sync.getClass().getMethod("isReady", UUID.class)
+                    .invoke(sync, player.getUniqueId());
+            return Boolean.TRUE.equals(ready);
+        } catch (ReflectiveOperationException e) {
+            return true;
+        }
     }
 
     private boolean tryPlayerHome(Player player, String homeName) {

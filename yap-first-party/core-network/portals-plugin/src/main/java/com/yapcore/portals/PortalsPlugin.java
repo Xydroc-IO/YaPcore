@@ -1,6 +1,9 @@
 package com.yapcore.portals;
 
 import com.yapcore.portals.cmd.PortalCommands;
+import com.yapcore.portals.enddoor.EndDoorListener;
+import com.yapcore.portals.enddoor.EndDoorStructure;
+import com.yapcore.portals.enddoor.EndDoorTags;
 import com.yapcore.portals.listener.PortalArrivalListener;
 import com.yapcore.portals.listener.PortalMoveListener;
 import com.yapcore.portals.listener.PortalPhysicsListener;
@@ -58,6 +61,20 @@ public final class PortalsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new PortalArrivalListener(this, config, arrivals, service), this);
 
+        if (config.endDoorsEnabled()) {
+            EndDoorStructure endStructure = new EndDoorStructure(
+                    config.endDoorFrame(),
+                    config.endDoorInterior(),
+                    config.endDoorWidth(),
+                    config.endDoorHeight());
+            EndDoorTags endTags = new EndDoorTags(this);
+            getServer().getPluginManager().registerEvents(
+                    new EndDoorListener(this, config, endStructure, endTags, service.cooldown()), this);
+            getLogger().info("End doors enabled — frame=" + config.endDoorFrame()
+                    + " " + config.endDoorWidth() + "x" + config.endDoorHeight()
+                    + " → " + config.endDoorWorld());
+        }
+
         PortalCommands commands = new PortalCommands(this, service, wandListener);
         var cmd = getCommand("portal");
         if (cmd != null) {
@@ -105,4 +122,3 @@ public final class PortalsPlugin extends JavaPlugin {
         }
     }
 }
-

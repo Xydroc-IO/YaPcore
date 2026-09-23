@@ -365,12 +365,8 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    for name in DYE_RGB:
-        _write_clear_glass(BLOCK / f"{name}_stained_glass.png")
-        _write_clear_glass(BLOCK / f"{name}_stained_glass_pane_top.png")
-        _write_clear_glass(BLOCK / f"{name}_stained_glass_pane.png")
-        print(f"  portal texture {name}")
-
+    # Stained-glass sheets stay as the visible portal. Writing a 16×16 clear
+    # texture here is what made in-world portals disappear from the pack.
     _write_sounds()
     _write_cohesive_sheet()
     print(f"Wrote YaP portal textures + sounds → {OUT}")

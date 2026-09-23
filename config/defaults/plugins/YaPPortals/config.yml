@@ -17,3 +17,16 @@ messages:
 
 connect:
   channel: BungeeCord
+
+# Player-built vertical End doors (4×5 obsidian + Ender Eye → The End).
+# /claim flag set nether-portal allow to make claimed doors public.
+# Dungeon base portals use crying obsidian — no frame clash.
+end-doors:
+  enabled: true
+  frame: OBSIDIAN
+  interior: NETHER_PORTAL
+  activate-item: ENDER_EYE
+  width: 4
+  height: 5
+  end-world: world_the_end
+  cooldown-seconds: 3
