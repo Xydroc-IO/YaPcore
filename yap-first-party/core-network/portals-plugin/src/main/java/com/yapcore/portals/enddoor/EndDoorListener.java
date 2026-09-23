@@ -21,6 +21,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -75,7 +76,7 @@ public final class EndDoorListener implements Listener {
         if (!config.endDoorsEnabled()) {
             return;
         }
-        if (event.getHand() != EquipmentSlot.HAND) {
+        if (event.getHand() != EquipmentSlot.HAND && event.getHand() != EquipmentSlot.OFF_HAND) {
             return;
         }
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -86,6 +87,7 @@ public final class EndDoorListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
+        ItemStack used = player.getInventory().getItem(event.getHand());
 
         Optional<Block> keystone = tags.findNearbyKeystone(
                 block, Math.max(structure.outerWidth(), structure.outerHeight()));
@@ -93,7 +95,7 @@ public final class EndDoorListener implements Listener {
             Optional<EndDoorStructure.Frame> frame = tags.frameFromKeystone(keystone.get());
             if (frame.isPresent() && structure.contains(frame.get(), block)) {
                 // Already lit — walking in handles travel; eye click is a no-op tip.
-                if (player.getInventory().getItemInMainHand().getType() == config.endDoorActivateItem()) {
+                if (used.getType() == config.endDoorActivateItem()) {
                     event.setCancelled(true);
                     player.sendMessage("§7End door is active — walk through to enter The End.");
                 }
@@ -101,8 +103,7 @@ public final class EndDoorListener implements Listener {
             }
         }
 
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand.getType() != config.endDoorActivateItem()) {
+        if (used.getType() != config.endDoorActivateItem()) {
             return;
         }
         if (block.getType() != structure.frameMaterial() && block.getType() != Material.END_PORTAL_FRAME) {
@@ -111,17 +112,25 @@ public final class EndDoorListener implements Listener {
         if (tags.isDungeonKeystone(block)) {
             return;
         }
+        // Cancel eye throw while probing / lighting an End-door frame
+        event.setCancelled(true);
         Optional<EndDoorStructure.Frame> complete = structure.findCompleteFrame(block);
         if (complete.isEmpty()) {
+            player.sendMessage("§cEnd door frame incomplete. §7Need a §f"
+                    + structure.outerWidth() + "×" + structure.outerHeight()
+                    + " §7" + pretty(structure.frameMaterial())
+                    + " frame with an empty "
+                    + (structure.outerWidth() - 2) + "×" + (structure.outerHeight() - 2)
+                    + " opening (not crying obsidian — that is for dungeons).");
             return;
         }
         EndDoorStructure.Frame frame = complete.get();
         if (tags.isDungeonKeystone(frame.keystone())
                 || tags.isKeystone(frame.keystone())
                 || tags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
+            player.sendMessage("§7End door is active — walk through to enter The End.");
             return;
         }
-        event.setCancelled(true);
         if (!player.hasPermission("yapportals.enddoor.build")
                 && !player.hasPermission("yapportals.admin")) {
             player.sendMessage("§cYou cannot activate End doors.");
@@ -130,12 +139,16 @@ public final class EndDoorListener implements Listener {
         structure.fillInterior(frame);
         tags.installKeystone(frame, player.getUniqueId());
         if (player.getGameMode() != GameMode.CREATIVE) {
-            hand.setAmount(hand.getAmount() - 1);
+            used.setAmount(used.getAmount() - 1);
         }
         player.sendMessage("§aEnd door opened! §7Walk through to enter The End.");
         plugin.getLogger().info("End door activated by " + player.getName()
                 + " at " + frame.keystone().getX() + "," + frame.keystone().getY()
                 + "," + frame.keystone().getZ());
+    }
+
+    private static String pretty(Material material) {
+        return material.name().toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
     @EventHandler(ignoreCancelled = true)

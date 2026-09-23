@@ -101,9 +101,9 @@ public final class PortalStructure {
         return outerHeight;
     }
 
-    /** Try to find a complete frame that includes this block (as frame material). */
+    /** Try to find a complete frame that includes this block (frame material or keystone). */
     public Optional<Frame> findCompleteFrame(Block origin) {
-        if (origin.getType() != frameMaterial) {
+        if (origin.getType() != frameMaterial && origin.getType() != Material.END_PORTAL_FRAME) {
             return Optional.empty();
         }
         Optional<Frame> x = scan(origin, Axis.X);

@@ -21,7 +21,9 @@ Instanced procedural dungeons: levels **1–50**, prestige **51–100**.
 ```
 
 1. Form a party (optional)  
-2. Open the level picker (walk through a lit dungeon portal, `/dungeon`, or craftable portal right-click) and pick an unlocked level  
+2. Open the level picker (walk through a lit **crying obsidian** dungeon portal, `/dungeon`, or craftable portal right-click) and pick an unlocked level  
+   - Frame: outer **4×5 crying obsidian**, empty **2×3** inside → Ender Eye on a frame block  
+   - Regular obsidian is for YaP End doors, not dungeons 
 3. Clear the instance  
 4. Leave when done (`/dungeon leave`) so instances can clean up  
 

@@ -317,6 +317,7 @@ public final class PresenceTextureCache {
             READY.put(uuid, id);
             TailorPreviewStore.setSkinTexture(id);
             TailorPreviewStore.notifyTexturesChanged();
+            PresenceWorldRefresh.afterSkinReady();
         } catch (Exception e) {
             LOGGER.warn("Failed to register presence texture for {}: {}", uuid, e.toString());
             try {
@@ -338,6 +339,7 @@ public final class PresenceTextureCache {
         IN_FLIGHT_URL.put(uuid, texture.toString());
         TailorPreviewStore.setSkinTexture(texture);
         TailorPreviewStore.notifyTexturesChanged();
+        PresenceWorldRefresh.afterSkinReady();
     }
 
     public static void clearPlayer(UUID uuid) {

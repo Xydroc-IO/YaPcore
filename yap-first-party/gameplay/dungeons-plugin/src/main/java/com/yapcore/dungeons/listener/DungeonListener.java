@@ -37,6 +37,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -116,7 +117,7 @@ public final class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) {
+        if (event.getHand() != EquipmentSlot.HAND && event.getHand() != EquipmentSlot.OFF_HAND) {
             return;
         }
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -127,6 +128,7 @@ public final class DungeonListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
+        ItemStack used = player.getInventory().getItem(event.getHand());
 
         // Craftable single-block portal (no walk-through) → menu
         if (block.getState() instanceof org.bukkit.block.TileState tile
@@ -149,7 +151,7 @@ public final class DungeonListener implements Listener {
         if (keystone.isPresent()) {
             Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
             if (frame.isPresent() && structure.contains(frame.get(), block)) {
-                if (player.getInventory().getItemInMainHand().getType() == config.structureActivateItem()) {
+                if (used.getType() == config.structureActivateItem()) {
                     event.setCancelled(true);
                     player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
                 }
@@ -157,26 +159,31 @@ public final class DungeonListener implements Listener {
             }
         }
 
-        // Activate incomplete→complete frame with ender eye
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand.getType() != config.structureActivateItem()) {
+        // Activate incomplete→complete frame with ender eye (either hand)
+        if (used.getType() != config.structureActivateItem()) {
             return;
         }
         if (block.getType() != structure.frameMaterial() && block.getType() != Material.END_PORTAL_FRAME) {
             return;
         }
+        // Always cancel eye-of-ender throw when clicking a dungeon frame block
+        event.setCancelled(true);
         Optional<PortalStructure.Frame> complete = structure.findCompleteFrame(block);
         if (complete.isEmpty()) {
+            player.sendMessage("§cDungeon portal frame incomplete. §7Need a §f"
+                    + structure.outerWidth() + "×" + structure.outerHeight()
+                    + " §7" + pretty(structure.frameMaterial())
+                    + " frame with an empty "
+                    + (structure.outerWidth() - 2) + "×" + (structure.outerHeight() - 2)
+                    + " opening (not regular obsidian).");
             return;
         }
         PortalStructure.Frame frame = complete.get();
         if (structureTags.isKeystone(frame.keystone())
                 || structureTags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
-            event.setCancelled(true);
             player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
             return;
         }
-        event.setCancelled(true);
         if (!player.hasPermission("yapdungeons.portal.place")) {
             YapMessages.noPermission(player, "yapdungeons.portal.place");
             return;
@@ -187,9 +194,13 @@ public final class DungeonListener implements Listener {
         structure.fillInterior(frame);
         structureTags.installKeystone(frame, player.getUniqueId());
         if (player.getGameMode() != GameMode.CREATIVE) {
-            hand.setAmount(hand.getAmount() - 1);
+            used.setAmount(used.getAmount() - 1);
         }
         player.sendMessage("§aDungeon portal activated! §7Walk through to pick a level.");
+    }
+
+    private static String pretty(Material material) {
+        return material.name().toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
     /**

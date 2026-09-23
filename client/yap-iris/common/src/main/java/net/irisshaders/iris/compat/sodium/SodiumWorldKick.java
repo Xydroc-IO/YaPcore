@@ -13,19 +13,34 @@ import net.minecraft.client.Minecraft;
  */
 public final class SodiumWorldKick {
 	private static int ticksUntilKick;
+	private static int followUpTicks;
 	private static boolean armed;
 	private static boolean kicking;
 
 	private SodiumWorldKick() {
 	}
 
-	/** Schedule the Video Settings refresh. Later calls replace the timer. */
+	/**
+	 * Schedule the Video Settings refresh. Keeps the soonest pending deadline
+	 * when already armed (join kick + later skin-ready kick coexist).
+	 */
 	public static void arm(int ticks) {
 		if (kicking) {
 			return;
 		}
-		ticksUntilKick = Math.max(1, ticks);
-		armed = true;
+		int next = Math.max(1, ticks);
+		if (armed) {
+			ticksUntilKick = Math.min(ticksUntilKick, next);
+		} else {
+			ticksUntilKick = next;
+			armed = true;
+		}
+	}
+
+	/** After the next kick fires, schedule another one {@code ticks} later. */
+	public static void armWithFollowUp(int ticks, int followUp) {
+		arm(ticks);
+		followUpTicks = Math.max(followUpTicks, Math.max(1, followUp));
 	}
 
 	public static void onLeave() {
@@ -34,6 +49,7 @@ public final class SodiumWorldKick {
 		}
 		armed = false;
 		ticksUntilKick = 0;
+		followUpTicks = 0;
 	}
 
 	public static void onClientTick(Minecraft mc) {
@@ -43,22 +59,28 @@ public final class SodiumWorldKick {
 		if (mc.level == null || mc.levelExtractor == null) {
 			armed = false;
 			ticksUntilKick = 0;
+			followUpTicks = 0;
 			return;
 		}
 		if (--ticksUntilKick > 0) {
 			return;
 		}
 		armed = false;
-		if (!Iris.isPackInUseQuick()) {
-			return;
-		}
+		int nextFollow = followUpTicks;
+		followUpTicks = 0;
 		kicking = true;
 		try {
-			ConfigManager.CONFIG.resetAllOptionsFromBindings();
-			ConfigManager.CONFIG.invalidateGlobalRebuildDependents();
+			// Shader packs need Sodium option rebind; skins/meshes need allChanged either way.
+			if (Iris.isPackInUseQuick()) {
+				ConfigManager.CONFIG.resetAllOptionsFromBindings();
+				ConfigManager.CONFIG.invalidateGlobalRebuildDependents();
+			}
 			mc.levelExtractor.allChanged();
 		} finally {
 			kicking = false;
+		}
+		if (nextFollow > 0) {
+			arm(nextFollow);
 		}
 	}
 }
