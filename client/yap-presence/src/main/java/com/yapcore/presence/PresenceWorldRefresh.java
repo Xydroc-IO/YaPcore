@@ -8,6 +8,10 @@ import org.slf4j.LoggerFactory;
  * Force Sodium/Iris entity + chunk rebuilds after a wardrobe/Tailor skin texture
  * becomes ready. Join-time Iris kicks often run before the PNG is registered,
  * so skins stay stale until Video Settings is opened unless we rebuild again.
+ * <p>
+ * Never call {@code levelExtractor.allChanged()} here — mid-frame / immediate
+ * rebuilds (including {@code Minecraft.execute}) poison Sodium until Video
+ * Settings. Always go through SodiumWorldKick; if Iris is absent, skip.
  */
 public final class PresenceWorldRefresh {
     private static final Logger LOGGER = LoggerFactory.getLogger("yap-presence");
@@ -24,16 +28,7 @@ public final class PresenceWorldRefresh {
         }
         lastRequestMs = now;
         Minecraft mc = Minecraft.getInstance();
-        Runnable work = () -> {
-            try {
-                if (mc.levelExtractor != null) {
-                    mc.levelExtractor.allChanged();
-                }
-            } catch (Throwable t) {
-                LOGGER.debug("levelExtractor.allChanged failed: {}", t.toString());
-            }
-            armIrisKick(2, 18);
-        };
+        Runnable work = () -> armIrisKick(1, 20);
         if (mc.isSameThread()) {
             work.run();
         } else {
@@ -49,8 +44,11 @@ public final class PresenceWorldRefresh {
             } catch (NoSuchMethodException e) {
                 kick.getMethod("arm", int.class).invoke(null, ticks);
             }
-        } catch (Throwable ignored) {
-            // Iris optional
+        } catch (Throwable t) {
+            // Iris optional — do not call allChanged here. execute() can run
+            // mid-frame and poison Sodium until Video Settings. Without the kick
+            // helper there is no safe deferred path from this mod alone.
+            LOGGER.debug("SodiumWorldKick unavailable, skipping skin mesh kick: {}", t.toString());
         }
     }
 }

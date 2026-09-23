@@ -14,9 +14,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Marks tool/weapon third-person submits so {@link ItemTransformMixin} can
- * hang the blade beside the leg. Do not rotate this pose stack before submit —
- * that spins the grip translation and floats the weapon behind the arm.
+ * Marks tool/weapon third-person submits so {@link LayerRenderStateMixin} can
+ * tip the blade down around the hand after the vanilla display transform.
  */
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin {
