@@ -63,60 +63,138 @@ public final class DungeonCarver {
             byId.put(r.id(), r);
         }
 
-        YapSched.global(plugin, () -> {
-            try {
-                progress.accept("Laying foundation…");
-                layFoundation(world, layout, theme);
-                progress.accept("Carving rooms…");
-                for (RoomGraphBuilder.Room room : layout.rooms()) {
-                    carveRoomShell(world, room, layout.originY(), theme);
-                }
-                progress.accept("Connecting corridors…");
-                for (RoomGraphBuilder.Corridor c : layout.corridors()) {
-                    RoomGraphBuilder.Room a = byId.get(c.fromId());
-                    RoomGraphBuilder.Room b = byId.get(c.toId());
-                    if (a == null || b == null) {
-                        continue;
+        int minX = layout.minX() - 2;
+        int minZ = layout.minZ() - 2;
+        int maxX = layout.maxX() + 2;
+        int maxZ = layout.maxZ() + 2;
+
+        progress.accept("Laying foundation…");
+        forEachChunk(world, minX, minZ, maxX, maxZ, (cx, cz) ->
+                layFoundationInChunk(world, layout, theme, cx, cz))
+                .thenCompose(v -> {
+                    progress.accept("Carving rooms…");
+                    return forEachChunk(world, minX, minZ, maxX, maxZ, (cx, cz) -> {
+                        for (RoomGraphBuilder.Room room : layout.rooms()) {
+                            carveRoomShellInChunk(world, room, layout.originY(), theme, cx, cz);
+                        }
+                    });
+                })
+                .thenCompose(v -> {
+                    progress.accept("Connecting corridors…");
+                    return forEachChunk(world, minX, minZ, maxX, maxZ, (cx, cz) -> {
+                        for (RoomGraphBuilder.Corridor c : layout.corridors()) {
+                            RoomGraphBuilder.Room a = byId.get(c.fromId());
+                            RoomGraphBuilder.Room b = byId.get(c.toId());
+                            if (a == null || b == null) {
+                                continue;
+                            }
+                            carveCorridorInChunk(world, a, b, layout.originY(), theme, cx, cz);
+                        }
+                    });
+                })
+                .thenCompose(v -> {
+                    // Doorways + decorate touch a room's footprint — run per room on its region
+                    progress.accept("Decorating rooms…");
+                    CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
+                    for (RoomGraphBuilder.Corridor c : layout.corridors()) {
+                        RoomGraphBuilder.Room a = byId.get(c.fromId());
+                        RoomGraphBuilder.Room b = byId.get(c.toId());
+                        if (a == null || b == null) {
+                            continue;
+                        }
+                        chain = chain.thenCompose(ignored -> regionRun(world, a.centerX(), a.centerZ(), () ->
+                                templates.carveDoorway(world, a, layout.originY(), b.centerX(), b.centerZ(), theme)));
+                        chain = chain.thenCompose(ignored -> regionRun(world, b.centerX(), b.centerZ(), () ->
+                                templates.carveDoorway(world, b, layout.originY(), a.centerX(), a.centerZ(), theme)));
                     }
-                    carveCorridor(world, a, b, layout.originY(), theme);
-                    templates.carveDoorway(world, a, layout.originY(), b.centerX(), b.centerZ(), theme);
-                    templates.carveDoorway(world, b, layout.originY(), a.centerX(), a.centerZ(), theme);
-                }
-                progress.accept("Decorating rooms…");
-                for (RoomGraphBuilder.Room room : layout.rooms()) {
-                    templates.decorate(world, room, layout.originY(), theme, rng, runId, chests);
-                }
-                world.setSpawnLocation(entrance);
-                progress.accept("Spawning hostiles…");
-                for (RoomGraphBuilder.Room room : layout.rooms()) {
-                    if (room.kind() == RoomGraphBuilder.RoomKind.ENTRANCE) {
-                        continue;
+                    for (RoomGraphBuilder.Room room : layout.rooms()) {
+                        chain = chain.thenCompose(ignored -> regionRun(world, room.centerX(), room.centerZ(), () ->
+                                templates.decorate(world, room, layout.originY(), theme, rng, runId, chests)));
                     }
-                    if (room.kind() == RoomGraphBuilder.RoomKind.BOSS) {
-                        spawnBoss(world, bossLoc, theme, diff, runId);
-                    } else if (room.kind() == RoomGraphBuilder.RoomKind.COMBAT
-                            || room.kind() == RoomGraphBuilder.RoomKind.TRAP) {
-                        spawnMobs(world, room, layout.originY(), theme, diff, rng, runId);
+                    return chain;
+                })
+                .thenCompose(v -> {
+                    progress.accept("Spawning hostiles…");
+                    CompletableFuture<Void> chain = regionRun(world, entrance.getBlockX(), entrance.getBlockZ(),
+                            () -> world.setSpawnLocation(entrance));
+                    for (RoomGraphBuilder.Room room : layout.rooms()) {
+                        if (room.kind() == RoomGraphBuilder.RoomKind.ENTRANCE) {
+                            continue;
+                        }
+                        if (room.kind() == RoomGraphBuilder.RoomKind.BOSS) {
+                            chain = chain.thenCompose(ignored -> regionRun(world, bossLoc.getBlockX(), bossLoc.getBlockZ(),
+                                    () -> spawnBoss(world, bossLoc, theme, diff, runId)));
+                        } else if (room.kind() == RoomGraphBuilder.RoomKind.COMBAT
+                                || room.kind() == RoomGraphBuilder.RoomKind.TRAP) {
+                            chain = chain.thenCompose(ignored -> regionRun(world, room.centerX(), room.centerZ(),
+                                    () -> spawnMobs(world, room, layout.originY(), theme, diff, rng, runId)));
+                        }
                     }
-                }
-                future.complete(new BuildResult(entrance, bossLoc, List.copyOf(chests)));
-            } catch (Exception e) {
-                future.completeExceptionally(e);
-            }
-        });
+                    return chain;
+                })
+                .whenComplete((v, err) -> {
+                    if (err != null) {
+                        future.completeExceptionally(err instanceof Exception e ? e : new Exception(err));
+                    } else {
+                        future.complete(new BuildResult(entrance, bossLoc, List.copyOf(chests)));
+                    }
+                });
         return future;
     }
 
-    private void layFoundation(World world, RoomGraphBuilder.Layout layout, ThemeTable.Theme theme) {
+    /** Folia-safe: run {@code work} on each chunk's owning region, sequentially. */
+    private CompletableFuture<Void> forEachChunk(
+            World world, int minX, int minZ, int maxX, int maxZ, ChunkWork work) {
+        List<int[]> chunks = new ArrayList<>();
+        for (int cx = minX >> 4; cx <= maxX >> 4; cx++) {
+            for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++) {
+                chunks.add(new int[]{cx, cz});
+            }
+        }
+        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
+        for (int[] c : chunks) {
+            final int cx = c[0];
+            final int cz = c[1];
+            chain = chain.thenCompose(ignored -> regionRun(world, cx << 4, cz << 4, () -> {
+                world.getChunkAt(cx, cz);
+                work.run(cx, cz);
+            }));
+        }
+        return chain;
+    }
+
+    private CompletableFuture<Void> regionRun(World world, int blockX, int blockZ, Runnable work) {
+        CompletableFuture<Void> step = new CompletableFuture<>();
+        YapSched.region(plugin, world, blockX, blockZ, () -> {
+            try {
+                work.run();
+                step.complete(null);
+            } catch (Throwable t) {
+                step.completeExceptionally(t);
+            }
+        });
+        return step;
+    }
+
+    @FunctionalInterface
+    private interface ChunkWork {
+        void run(int chunkX, int chunkZ);
+    }
+
+    private void layFoundationInChunk(
+            World world, RoomGraphBuilder.Layout layout, ThemeTable.Theme theme, int cx, int cz) {
         int y = layout.originY();
         int minX = layout.minX() - 2;
         int minZ = layout.minZ() - 2;
         int maxX = layout.maxX() + 2;
         int maxZ = layout.maxZ() + 2;
-        for (int x = minX; x < maxX; x++) {
-            for (int z = minZ; z < maxZ; z++) {
+        int x0 = Math.max(minX, cx << 4);
+        int z0 = Math.max(minZ, cz << 4);
+        int x1 = Math.min(maxX, (cx << 4) + 16);
+        int z1 = Math.min(maxZ, (cz << 4) + 16);
+        for (int x = x0; x < x1; x++) {
+            for (int z = z0; z < z1; z++) {
                 world.getBlockAt(x, y - 1, z).setType(Material.BEDROCK, false);
-                // Thin gravel rim so the complex sits on a pad instead of void
                 if (x == minX || z == minZ || x == maxX - 1 || z == maxZ - 1) {
                     world.getBlockAt(x, y, z).setType(theme.wall(), false);
                 }
@@ -124,15 +202,20 @@ public final class DungeonCarver {
         }
     }
 
-    private void carveRoomShell(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme) {
+    private void carveRoomShellInChunk(
+            World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme, int cx, int cz) {
         int x0 = room.x();
         int z0 = room.z();
         int x1 = x0 + room.sizeX();
         int z1 = z0 + room.sizeZ();
         int floor = y;
         int ceil = y + 5;
-        for (int x = x0; x < x1; x++) {
-            for (int z = z0; z < z1; z++) {
+        int bx0 = Math.max(x0, cx << 4);
+        int bz0 = Math.max(z0, cz << 4);
+        int bx1 = Math.min(x1, (cx << 4) + 16);
+        int bz1 = Math.min(z1, (cz << 4) + 16);
+        for (int x = bx0; x < bx1; x++) {
+            for (int z = bz0; z < bz1; z++) {
                 for (int yy = floor; yy <= ceil; yy++) {
                     Block b = world.getBlockAt(x, yy, z);
                     boolean edge = x == x0 || z == z0 || x == x1 - 1 || z == z1 - 1;
@@ -151,49 +234,57 @@ public final class DungeonCarver {
         }
     }
 
-    private void carveCorridor(
-            World world, RoomGraphBuilder.Room a, RoomGraphBuilder.Room b, int y, ThemeTable.Theme theme) {
+    private void carveCorridorInChunk(
+            World world, RoomGraphBuilder.Room a, RoomGraphBuilder.Room b, int y,
+            ThemeTable.Theme theme, int cx, int cz) {
         int ax = a.centerX();
         int az = a.centerZ();
         int bx = b.centerX();
         int bz = b.centerZ();
-        // Orthogonal hallway: horizontal then vertical (deterministic order by seedless compare)
         int x = ax;
         int z = az;
         while (x != bx) {
-            digHall(world, x, y, z, theme);
+            digHallInChunk(world, x, y, z, theme, cx, cz);
             x += Integer.compare(bx, x);
         }
         while (z != bz) {
-            digHall(world, x, y, z, theme);
+            digHallInChunk(world, x, y, z, theme, cx, cz);
             z += Integer.compare(bz, z);
         }
     }
 
-    private void digHall(World world, int x, int y, int z, ThemeTable.Theme theme) {
+    private void digHallInChunk(World world, int x, int y, int z, ThemeTable.Theme theme, int cx, int cz) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                world.getBlockAt(x + dx, y - 1, z + dz).setType(Material.BEDROCK, false);
-                world.getBlockAt(x + dx, y, z + dz).setType(theme.floor(), false);
-                world.getBlockAt(x + dx, y + 1, z + dz).setType(Material.AIR, false);
-                world.getBlockAt(x + dx, y + 2, z + dz).setType(Material.AIR, false);
-                world.getBlockAt(x + dx, y + 3, z + dz).setType(Material.AIR, false);
-                // Walls only on corridor edges
-                if (Math.abs(dx) == 1 || Math.abs(dz) == 1) {
-                    world.getBlockAt(x + dx, y + 1, z + dz).setType(theme.wall(), false);
-                    world.getBlockAt(x + dx, y + 2, z + dz).setType(theme.wall(), false);
+                int wx = x + dx;
+                int wz = z + dz;
+                if ((wx >> 4) != cx || (wz >> 4) != cz) {
+                    continue;
                 }
-                world.getBlockAt(x + dx, y + 4, z + dz).setType(theme.wall(), false);
+                world.getBlockAt(wx, y - 1, wz).setType(Material.BEDROCK, false);
+                world.getBlockAt(wx, y, wz).setType(theme.floor(), false);
+                world.getBlockAt(wx, y + 1, wz).setType(Material.AIR, false);
+                world.getBlockAt(wx, y + 2, wz).setType(Material.AIR, false);
+                world.getBlockAt(wx, y + 3, wz).setType(Material.AIR, false);
+                if (Math.abs(dx) == 1 || Math.abs(dz) == 1) {
+                    world.getBlockAt(wx, y + 1, wz).setType(theme.wall(), false);
+                    world.getBlockAt(wx, y + 2, wz).setType(theme.wall(), false);
+                }
+                world.getBlockAt(wx, y + 4, wz).setType(theme.wall(), false);
             }
         }
-        // Re-clear center walkway 1-wide (after edge walls)
-        world.getBlockAt(x, y + 1, z).setType(Material.AIR, false);
-        world.getBlockAt(x, y + 2, z).setType(Material.AIR, false);
-        world.getBlockAt(x, y + 3, z).setType(Material.AIR, false);
-        // Occasional ceiling light
-        if (((x + z) & 7) == 0) {
-            world.getBlockAt(x, y + 3, z).setType(theme.light(), false);
+        if ((x >> 4) == cx && (z >> 4) == cz) {
+            world.getBlockAt(x, y + 1, z).setType(Material.AIR, false);
+            world.getBlockAt(x, y + 2, z).setType(Material.AIR, false);
+            world.getBlockAt(x, y + 3, z).setType(Material.AIR, false);
+            if (((x + z) & 7) == 0) {
+                world.getBlockAt(x, y + 3, z).setType(theme.light(), false);
+            }
         }
+    }
+
+    private void digHall(World world, int x, int y, int z, ThemeTable.Theme theme) {
+        digHallInChunk(world, x, y, z, theme, x >> 4, z >> 4);
     }
 
     private void spawnMobs(
