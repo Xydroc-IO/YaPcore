@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  */
 public final class PortalArrivalPending {
 
-    private static final long TTL_MS = 120_000L;
+    private static final long TTL_MS = 300_000L;
 
     public record ArrivalRequest(PortalArrival arrival, String homeName) {
         public ArrivalRequest {

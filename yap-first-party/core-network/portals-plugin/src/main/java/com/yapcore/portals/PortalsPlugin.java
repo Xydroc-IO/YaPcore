@@ -3,6 +3,8 @@ package com.yapcore.portals;
 import com.yapcore.portals.cmd.PortalCommands;
 import com.yapcore.portals.enddoor.EndDoorListener;
 import com.yapcore.portals.enddoor.EndDoorRegistry;
+import com.yapcore.portals.enddoor.EndDoorRehydrate;
+import com.yapcore.portals.enddoor.EndDoorStore;
 import com.yapcore.portals.enddoor.EndDoorStructure;
 import com.yapcore.portals.enddoor.EndDoorTags;
 import com.yapcore.portals.enddoor.EndDoorVisuals;
@@ -70,8 +72,20 @@ public final class PortalsPlugin extends JavaPlugin {
                     config.endDoorWidth(),
                     config.endDoorHeight());
             EndDoorTags endTags = new EndDoorTags(this);
+            EndDoorStore endStore = new EndDoorStore(this);
+            endStore.load();
             getServer().getPluginManager().registerEvents(
-                    new EndDoorListener(this, config, endStructure, endTags, service.cooldown()), this);
+                    new EndDoorListener(this, config, endStructure, endTags, service.cooldown(), service, endStore), this);
+            // Chunks already loaded at enable never fire ChunkLoadEvent — scan once after worlds settle
+            YapSched.globalLater(this, () -> {
+                EndDoorRehydrate.scanLoaded(this, endStructure, endTags, endStore);
+                getLogger().info("End door rehydrate scan — registry=" + EndDoorRegistry.all().size()
+                        + " persisted=" + endStore.all().size());
+            }, 80L);
+            // Periodic catch-up: register keystones in loaded chunks that missed ChunkLoad
+            YapSched.globalTimer(this, () -> {
+                EndDoorRehydrate.scanLoaded(this, endStructure, endTags, endStore);
+            }, 20L * 15, 20L * 30);
             final int[] endPulse = {0};
             YapSched.globalTimer(this, () -> {
                 if (EndDoorRegistry.all().isEmpty()) {

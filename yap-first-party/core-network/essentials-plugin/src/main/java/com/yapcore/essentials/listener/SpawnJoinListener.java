@@ -12,8 +12,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /** Optional hub-style join: always land at this server's /setspawn. */
 public final class SpawnJoinListener implements Listener {
+
+    private static final long FIRST_DELAY_TICKS = 20L;
+    private static final long RETRY_DELAY_TICKS = 20L;
+    private static final int MAX_ATTEMPTS = 5;
 
     private final JavaPlugin plugin;
     private final EssentialsConfig config;
@@ -27,27 +33,44 @@ public final class SpawnJoinListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        if (!config.spawnTeleportOnJoin()) {
+        if (!liveConfig().spawnTeleportOnJoin()) {
             return;
         }
         Player player = event.getPlayer();
-        // After PlayerData unfreeze / chunk attach
-        YapSched.entityLater(plugin, player, () -> {
-            if (!player.isOnline()) {
-                return;
+        AtomicInteger attempt = new AtomicInteger(0);
+        schedule(player, attempt);
+    }
+
+    private void schedule(Player player, AtomicInteger attempt) {
+        long delay = attempt.get() == 0 ? FIRST_DELAY_TICKS : RETRY_DELAY_TICKS;
+        YapSched.entityLater(plugin, player, () -> run(player, attempt), delay);
+    }
+
+    private void run(Player player, AtomicInteger attempt) {
+        if (!player.isOnline()) {
+            return;
+        }
+        if (!liveConfig().spawnTeleportOnJoin()) {
+            return;
+        }
+        int n = attempt.incrementAndGet();
+        Location spawn = spawnStore.spawn();
+        if (spawn == null || spawn.getWorld() == null) {
+            if (n < MAX_ATTEMPTS) {
+                schedule(player, attempt);
             }
-            EssentialsConfig live = config;
-            if (plugin instanceof com.yapcore.essentials.EssentialsPlugin ess) {
-                live = ess.essentialsConfig();
+            return;
+        }
+        TeleportHelper.teleport(plugin, player, spawn);
+    }
+
+    private EssentialsConfig liveConfig() {
+        if (plugin instanceof com.yapcore.essentials.EssentialsPlugin ess) {
+            EssentialsConfig live = ess.essentialsConfig();
+            if (live != null) {
+                return live;
             }
-            if (live == null || !live.spawnTeleportOnJoin()) {
-                return;
-            }
-            Location spawn = spawnStore.spawn();
-            if (spawn == null || spawn.getWorld() == null) {
-                return;
-            }
-            TeleportHelper.teleport(plugin, player, spawn);
-        }, 20L);
+        }
+        return config;
     }
 }

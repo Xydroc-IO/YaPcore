@@ -65,7 +65,7 @@ public final class EndDoorTags {
             pdc.set(minAlongKey, PersistentDataType.INTEGER, frame.minAlong());
             pdc.set(fixedKey, PersistentDataType.INTEGER, frame.fixed());
             pdc.set(minYKey, PersistentDataType.INTEGER, frame.minY());
-            tile.update();
+            tile.update(true, false);
         }
         return key;
     }

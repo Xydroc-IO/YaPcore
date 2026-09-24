@@ -56,19 +56,9 @@ public final class PortalArrivalListener implements Listener {
             return;
         }
         PortalArrivalPending.ArrivalRequest req = arrival.get();
-        PortalArrival mode = req.arrival();
-        String homeName = req.homeName();
-        // Reconnect into nether/end after a crash must not yank to overworld spawn
-        // from a leftover fleet Connect pending file.
-        World joinWorld = player.getWorld();
-        if (mode == PortalArrival.SPAWN && joinWorld != null) {
-            String env = joinWorld.getEnvironment().name();
-            if ("NETHER".equals(env) || "THE_END".equals(env)) {
-                plugin.getLogger().info("Portal arrival skipped for " + player.getName()
-                        + " — already in " + joinWorld.getName());
-                return;
-            }
-        }
+        // Always honor a fresh fleet Connect pending — even if PlayerData restored
+        // the player into The End/Nether from a prior visit. Skipping here made
+        // hub→survival land in The End after using an End door.
         UUID uuid = player.getUniqueId();
         if (applying.putIfAbsent(uuid, Boolean.TRUE) != null) {
             return;
@@ -253,7 +243,17 @@ public final class PortalArrivalListener implements Listener {
         if (essentials != null && essentials.getWorld() != null) {
             return essentials;
         }
-        World world = player.getWorld();
+        // Prefer overworld — never land a SPAWN arrival on The End/Nether spawn
+        World world = null;
+        for (World w : Bukkit.getWorlds()) {
+            if (w.getEnvironment() == World.Environment.NORMAL) {
+                world = w;
+                break;
+            }
+        }
+        if (world == null) {
+            world = player.getWorld();
+        }
         if (world == null) {
             world = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
         }

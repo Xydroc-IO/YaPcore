@@ -32,7 +32,7 @@ public final class EndDoorVisuals {
             return;
         }
         Location loc = new Location(world, g.cx, g.cy, g.cz);
-        ItemStack visual = faceItem("purple");
+        ItemStack visual = faceItem("blue");
         world.spawn(loc, ItemDisplay.class, display -> {
             display.setItemStack(visual);
             display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
@@ -61,6 +61,7 @@ public final class EndDoorVisuals {
             return;
         }
         Transformation next = transform(g.facing, g.scaleX, g.scaleY, g.scaleZ, angle);
+        int found = 0;
         for (Entity entity : world.getChunkAt(bx >> 4, bz >> 4).getEntities()) {
             if (!(entity instanceof ItemDisplay display)) {
                 continue;
@@ -75,6 +76,12 @@ public final class EndDoorVisuals {
             display.setInterpolationDelay(0);
             display.setInterpolationDuration(5);
             display.setTransformation(next);
+            found++;
+        }
+        // Chunk reload / restart often drops the ItemDisplay while the keystone remains
+        if (found == 0) {
+            spawnFace(frame);
+            return;
         }
         if ((int) (angle * 10) % 20 == 0) {
             world.spawnParticle(org.bukkit.Particle.PORTAL,

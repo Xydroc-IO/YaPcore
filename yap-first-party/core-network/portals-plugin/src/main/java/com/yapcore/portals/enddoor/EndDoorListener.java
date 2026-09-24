@@ -2,6 +2,7 @@ package com.yapcore.portals.enddoor;
 
 import com.yapcore.portals.PortalsConfig;
 import com.yapcore.portals.service.PortalCooldown;
+import com.yapcore.portals.service.PortalServiceImpl;
 import com.yapcore.sched.YapSched;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -28,16 +29,19 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * End doors: obsidian ring + eye → registry + AABB walk-in → The End.
  * Never place {@link Material#NETHER_PORTAL} in the opening.
+ * Fleet pads always win over End-door hop when volumes overlap.
  */
 public final class EndDoorListener implements Listener {
 
-    public static final String BUILD = "enddoor-20260923-g";
+    public static final String BUILD = "enddoor-20260923-j";
 
     private final JavaPlugin plugin;
     private final PortalsConfig config;
     private final EndDoorStructure structure;
     private final EndDoorTags tags;
     private final EndDoorTravel travel;
+    private final EndDoorStore store;
+    private final PortalServiceImpl portals;
     private final Map<UUID, Long> recentEnterMs = new ConcurrentHashMap<>();
 
     public EndDoorListener(
@@ -45,11 +49,15 @@ public final class EndDoorListener implements Listener {
             PortalsConfig config,
             EndDoorStructure structure,
             EndDoorTags tags,
-            PortalCooldown cooldown) {
+            PortalCooldown cooldown,
+            PortalServiceImpl portals,
+            EndDoorStore store) {
         this.plugin = plugin;
         this.config = config;
         this.structure = structure;
         this.tags = tags;
+        this.portals = portals;
+        this.store = store;
         this.travel = new EndDoorTravel(plugin, config, cooldown);
         this.travel.ensureEndWorldAsync();
     }
@@ -89,20 +97,20 @@ public final class EndDoorListener implements Listener {
         Player player = event.getPlayer();
         ItemStack used = player.getInventory().getItem(event.getHand());
 
-        // Already registered → any right-click enters (eye refreshes visuals)
+        // Already registered → eye refreshes the blue sheet (walk-in still enters)
         Optional<EndDoorStructure.Frame> registered = EndDoorRegistry.at(block.getLocation().add(0.5, 0.5, 0.5));
         if (registered.isEmpty()) {
             registered = frameFromNearbyKeystone(block);
             registered.ifPresent(EndDoorRegistry::register);
         }
         if (registered.isPresent() && structure.contains(registered.get(), block, 2)) {
-            event.setCancelled(true);
-            structure.fillInterior(registered.get());
-            EndDoorRegistry.register(registered.get());
             if (used.getType() == config.endDoorActivateItem()) {
-                player.sendMessage("§7End door ready (" + BUILD + ") — walking in / click again enters The End.");
+                event.setCancelled(true);
+                structure.fillInterior(registered.get());
+                EndDoorRegistry.register(registered.get());
+                store.upsert(registered.get());
+                player.sendMessage("§7End door ready (" + BUILD + ") — walk in to enter The End.");
             }
-            enterEnd(player, player.getLocation());
             return;
         }
 
@@ -133,10 +141,11 @@ public final class EndDoorListener implements Listener {
         tags.installKeystone(frame, player.getUniqueId());
         structure.fillInterior(frame);
         EndDoorRegistry.register(frame);
+        store.upsert(frame);
         if (player.getGameMode() != GameMode.CREATIVE) {
             used.setAmount(used.getAmount() - 1);
         }
-        player.sendMessage("§aEnd door opened (" + BUILD + ")! §7Walk in or right-click the frame → The End.");
+        player.sendMessage("§aEnd door opened (" + BUILD + ")! §7Walk through the §bblue §7sheet → The End.");
         plugin.getLogger().info("End door activated build=" + BUILD + " by " + player.getName()
                 + " at " + frame.keystone().getX() + "," + frame.keystone().getY()
                 + "," + frame.keystone().getZ()
@@ -167,6 +176,7 @@ public final class EndDoorListener implements Listener {
             return;
         }
         EndDoorRegistry.unregister(frame.get());
+        store.remove(frame.get());
         tags.deactivate(frame.get().keystone(), structure);
         player.sendMessage("§7End door deactivated.");
     }
@@ -188,11 +198,20 @@ public final class EndDoorListener implements Listener {
                 && from.getWorld().equals(to.getWorld())) {
             return;
         }
+        Player player = event.getPlayer();
+        // Fleet Connect / join landing grace — never yank to The End mid-arrival
+        if (portals != null && portals.inJoinGrace(player.getUniqueId())) {
+            return;
+        }
+        // Fleet pad volumes always win (hub→survival, etc.)
+        if (portals != null && portals.at(to).isPresent()) {
+            return;
+        }
         Optional<EndDoorStructure.Frame> frame = EndDoorRegistry.at(to);
         if (frame.isEmpty()) {
             return;
         }
-        enterEnd(event.getPlayer(), to);
+        enterEnd(player, to);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -200,20 +219,7 @@ public final class EndDoorListener implements Listener {
         if (!config.endDoorsEnabled()) {
             return;
         }
-        // Re-arm AABB + visuals after restart without requiring another eye click
-        for (org.bukkit.block.BlockState state : event.getChunk().getTileEntities()) {
-            Block block = state.getBlock();
-            if (block.getType() != Material.END_PORTAL_FRAME || !tags.isKeystone(block)) {
-                continue;
-            }
-            if (tags.isDungeonKeystone(block)) {
-                continue;
-            }
-            tags.frameFromKeystone(block).ifPresent(frame -> {
-                EndDoorRegistry.register(frame);
-                structure.ensureWalkable(frame);
-            });
-        }
+        EndDoorRehydrate.rehydrateChunk(plugin, structure, tags, store, event.getChunk());
     }
 
     private void enterEnd(Player player, Location probe) {

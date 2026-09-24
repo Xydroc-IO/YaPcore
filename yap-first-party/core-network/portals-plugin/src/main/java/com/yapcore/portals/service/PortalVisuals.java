@@ -12,6 +12,7 @@ import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -43,6 +44,16 @@ public final class PortalVisuals {
     }
 
     public void applyAll(Iterable<Portal> portals) {
+        // Hard reset: drop orphan discs everywhere, then repaint live pads.
+        // Deleted pads leave persistent ItemDisplays; with portals={} the old
+        // near-pad-only sweep never ran, so ghosts stayed on empty servers.
+        Set<String> keepIds = new HashSet<>();
+        for (Portal portal : portals) {
+            keepIds.add(PortalSheetDisplays.portalTag(portal));
+        }
+        for (World world : Bukkit.getWorlds()) {
+            purgeOrphanPortalDisplays(world, keepIds);
+        }
         for (Portal portal : portals) {
             if (portal.enabled()) {
                 fill(portal);
@@ -50,6 +61,61 @@ public final class PortalVisuals {
                 clear(portal);
             }
         }
+    }
+
+    /**
+     * Remove every {@code yap_portal_display} in loaded chunks that is not tagged
+     * for a currently defined portal. Safe with an empty portal list (clears all).
+     *
+     * @return number of displays removed
+     */
+    public int purgeOrphanPortalDisplays(World world, Set<String> keepPortalIdTags) {
+        if (world == null) {
+            return 0;
+        }
+        Set<String> keep = keepPortalIdTags == null ? Set.of() : keepPortalIdTags;
+        int[] removed = {0};
+        for (org.bukkit.Chunk chunk : world.getLoadedChunks()) {
+            int cx = chunk.getX();
+            int cz = chunk.getZ();
+            YapSched.regionChunk(plugin, world, cx, cz, () -> {
+                if (!world.isChunkLoaded(cx, cz)) {
+                    return;
+                }
+                for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
+                    if (!e.getScoreboardTags().contains(DISPLAY_TAG)) {
+                        continue;
+                    }
+                    boolean keepThis = false;
+                    for (String tag : e.getScoreboardTags()) {
+                        if (tag != null && keep.contains(tag)) {
+                            keepThis = true;
+                            break;
+                        }
+                    }
+                    if (!keepThis) {
+                        e.remove();
+                        removed[0]++;
+                    }
+                }
+            });
+        }
+        return removed[0];
+    }
+
+    /** Sweep all loaded worlds; keep only discs for the given portals. */
+    public int purgeOrphans(Iterable<Portal> portals) {
+        Set<String> keepIds = new HashSet<>();
+        if (portals != null) {
+            for (Portal portal : portals) {
+                keepIds.add(PortalSheetDisplays.portalTag(portal));
+            }
+        }
+        int total = 0;
+        for (World world : Bukkit.getWorlds()) {
+            total += purgeOrphanPortalDisplays(world, keepIds);
+        }
+        return total;
     }
 
     public void fill(Portal portal) {
@@ -63,6 +129,8 @@ public final class PortalVisuals {
     public void tickParticles(Iterable<Portal> portals) {
         long pulse = tick.incrementAndGet();
         boolean hum = pulse % HUM_EVERY_N_TICKS == 0;
+        // Continuous angle — discrete %10 steps looked like a flash when displays respawned.
+        float spin = (float) (pulse * 0.28);
         for (Portal portal : portals) {
             if (!portal.enabled()) {
                 continue;
@@ -78,7 +146,6 @@ public final class PortalVisuals {
                     PortalColors.red(portal.color()),
                     PortalColors.green(portal.color()),
                     PortalColors.blue(portal.color()));
-            float spin = (float) ((pulse % 10) * (Math.PI * 2.0 / 10.0));
             YapSched.region(plugin, world, midX, midZ, () -> {
                 spawnParticles(world, portal, color, pulse);
                 if (hum) {
@@ -207,7 +274,7 @@ public final class PortalVisuals {
             int cx = (int) (key >> 32);
             int cz = (int) key;
             YapSched.regionChunk(plugin, world, cx, cz, () -> {
-                clearDisplaysInChunk(world, cx, cz, true);
+                clearDisplaysInChunk(world, cx, cz, true, portal);
                 for (int x = minX; x <= maxX; x++) {
                     if ((x >> 4) != cx) {
                         continue;
@@ -259,6 +326,8 @@ public final class PortalVisuals {
     /**
      * Keep a single disc on the portal face. Extra discs in neighboring chunks
      * are removed, and a missing face is spawned, without loading far chunks.
+     * Only touches displays tagged for this portal — other pads in the same chunk
+     * keep spinning instead of being cleared/respawned (which looked like flashing).
      */
     private void maintainDisplays(World world, Portal portal, float angle) {
         PortalCuboid box = portal.cuboid();
@@ -267,6 +336,7 @@ public final class PortalVisuals {
         int minZ = box.minZ() - 1;
         int maxZ = box.maxZ() + 1;
         double faceX = (box.minX() + box.maxX() + 1) / 2.0;
+        double faceY = (box.minY() + box.maxY() + 1) / 2.0;
         double faceZ = (box.minZ() + box.maxZ() + 1) / 2.0;
         int faceCx = (int) Math.floor(faceX) >> 4;
         int faceCz = (int) Math.floor(faceZ) >> 4;
@@ -285,39 +355,73 @@ public final class PortalVisuals {
                     return;
                 }
                 if (!face) {
-                    clearDisplaysInChunk(world, cx, cz, false);
+                    clearDisplaysInChunk(world, cx, cz, false, portal);
                     return;
                 }
-                int found = 0;
-                boolean centered = false;
+                ItemDisplay keep = null;
                 for (Entity entity : world.getChunkAt(cx, cz).getEntities()) {
                     if (!entity.getScoreboardTags().contains(DISPLAY_TAG)) {
                         continue;
                     }
-                    found++;
                     Location at = entity.getLocation();
-                    centered = Math.abs(at.getX() - faceX) < 0.6
-                            && Math.abs(at.getZ() - faceZ) < 0.6;
+                    boolean near = Math.abs(at.getX() - faceX) < 2.0
+                            && Math.abs(at.getY() - faceY) < 3.0
+                            && Math.abs(at.getZ() - faceZ) < 2.0;
+                    if (!near) {
+                        continue;
+                    }
+                    if (PortalSheetDisplays.isThisPortal(entity, portal)) {
+                        if (keep == null && entity instanceof ItemDisplay display) {
+                            keep = display;
+                        } else {
+                            entity.remove();
+                        }
+                        continue;
+                    }
+                    // Untagged leftovers from older builds stack on color changes.
+                    if (!PortalSheetDisplays.hasPortalIdTag(entity)) {
+                        entity.remove();
+                    }
                 }
-                if (found == 1 && centered) {
+                if (keep != null) {
                     PortalSheetDisplays.spin(world, portal, angle);
                     return;
                 }
-                clearDisplaysInChunk(world, cx, cz, false);
+                clearDisplaysInChunk(world, cx, cz, false, portal);
                 PortalSheetDisplays.spawnFace(world, portal);
             });
         }
     }
 
-    private void clearDisplaysInChunk(World world, int cx, int cz, boolean load) {
+    private void clearDisplaysInChunk(World world, int cx, int cz, boolean load, Portal portal) {
         if (!load && !world.isChunkLoaded(cx, cz)) {
             return;
         }
+        PortalCuboid box = portal == null ? null : portal.cuboid();
+        double faceX = box == null ? 0 : (box.minX() + box.maxX() + 1) / 2.0;
+        double faceY = box == null ? 0 : (box.minY() + box.maxY() + 1) / 2.0;
+        double faceZ = box == null ? 0 : (box.minZ() + box.maxZ() + 1) / 2.0;
         for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
             if (!e.getScoreboardTags().contains(DISPLAY_TAG)) {
                 continue;
             }
-            e.remove();
+            if (portal == null) {
+                e.remove();
+                continue;
+            }
+            if (PortalSheetDisplays.isThisPortal(e, portal)) {
+                e.remove();
+                continue;
+            }
+            // Untagged leftovers from before per-portal ids — remove if on this face.
+            if (!PortalSheetDisplays.hasPortalIdTag(e)) {
+                Location at = e.getLocation();
+                if (Math.abs(at.getX() - faceX) < 2.5
+                        && Math.abs(at.getY() - faceY) < 3.5
+                        && Math.abs(at.getZ() - faceZ) < 2.5) {
+                    e.remove();
+                }
+            }
         }
     }
 

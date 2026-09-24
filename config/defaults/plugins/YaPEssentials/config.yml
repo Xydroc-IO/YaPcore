@@ -80,11 +80,11 @@ rtp:
   enabled: true
   worlds:
     - world
-  min-radius: 500
-  max-radius: 8000
+  min-radius: 1600
+  max-radius: 16000
   min-y: 40
   max-y: 200
-  max-attempts: 24
+  max-attempts: 40
   cooldown-seconds: 60
   avoid-claims: true
   center-on-spawn: true

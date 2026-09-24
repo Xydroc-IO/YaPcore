@@ -25,6 +25,10 @@ public final class EndDoorRegistry {
                 + frame.sizeAlong() + "|" + frame.height();
     }
 
+    public static boolean contains(EndDoorStructure.Frame frame) {
+        return ACTIVE.containsKey(key(frame));
+    }
+
     public static void register(EndDoorStructure.Frame frame) {
         ACTIVE.put(key(frame), frame);
     }

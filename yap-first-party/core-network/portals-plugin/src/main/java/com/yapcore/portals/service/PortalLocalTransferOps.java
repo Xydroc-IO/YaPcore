@@ -91,16 +91,28 @@ final class PortalLocalTransferOps {
             } catch (Exception fx) {
                 plugin.getLogger().log(Level.FINE, "portal enter FX", fx);
             }
-            if (!tryEssentialsRtp(player)) {
+            if (!tryEssentialsRtp(player, ok -> YapSched.entity(plugin, player, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (!Boolean.TRUE.equals(ok)) {
+                    return;
+                }
+                if (customMsg != null && !customMsg.isBlank()) {
+                    player.sendMessage(customMsg.replace("{server}", config.serverId()));
+                }
+                cooldown.mark(player.getUniqueId(), cooldownSec, System.currentTimeMillis());
+                host.armJoinGrace(player.getUniqueId());
+                host.seedInsideFromLocation(player);
+                visuals.playArrive(player);
+                plugin.getLogger().info("Local RTP portal " + player.getName()
+                        + (portal == null ? "" : " via " + portal.name()) + " done");
+            }))) {
                 player.sendMessage("§cWild portal needs YaPEssentials RTP on this server.");
                 return;
             }
-            if (customMsg != null && !customMsg.isBlank()) {
-                player.sendMessage(customMsg.replace("{server}", config.serverId()));
-            }
-            cooldown.mark(player.getUniqueId(), cooldownSec, System.currentTimeMillis());
             plugin.getLogger().info("Local RTP portal " + player.getName()
-                    + (portal == null ? "" : " via " + portal.name()));
+                    + (portal == null ? "" : " via " + portal.name()) + " searching…");
         });
         return true;
     }
@@ -162,7 +174,7 @@ final class PortalLocalTransferOps {
         }
     }
 
-    private boolean tryEssentialsRtp(Player player) {
+    private boolean tryEssentialsRtp(Player player, java.util.function.Consumer<Boolean> done) {
         org.bukkit.plugin.Plugin ess = org.bukkit.Bukkit.getPluginManager().getPlugin("YaPEssentials");
         if (ess == null || !ess.isEnabled()) {
             return false;
@@ -172,8 +184,19 @@ final class PortalLocalTransferOps {
             if (service == null) {
                 return false;
             }
-            Object ok = service.getClass().getMethod("start", Player.class).invoke(service, player);
-            return Boolean.TRUE.equals(ok);
+            try {
+                Object ok = service.getClass()
+                        .getMethod("start", Player.class, org.bukkit.World.class, java.util.function.Consumer.class)
+                        .invoke(service, player, null, done);
+                return Boolean.TRUE.equals(ok);
+            } catch (NoSuchMethodException ignored) {
+                Object ok = service.getClass().getMethod("start", Player.class).invoke(service, player);
+                boolean accepted = Boolean.TRUE.equals(ok);
+                if (done != null) {
+                    done.accept(accepted);
+                }
+                return accepted;
+            }
         } catch (ReflectiveOperationException e) {
             plugin.getLogger().warning("Local portal RTP failed: " + e.getMessage());
             return false;

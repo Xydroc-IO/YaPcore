@@ -71,11 +71,11 @@ public final class EssentialsConfig {
     private boolean syncKeepInventoryGamerule = true;
 
     private boolean rtpEnabled = true;
-    private int rtpMinRadius = 500;
-    private int rtpMaxRadius = 8000;
+    private int rtpMinRadius = 1600;
+    private int rtpMaxRadius = 16000;
     private int rtpMinY = 40;
     private int rtpMaxY = 200;
-    private int rtpMaxAttempts = 24;
+    private int rtpMaxAttempts = 40;
     private int rtpCooldownSeconds = 60;
     private boolean rtpAvoidClaims = true;
     private boolean rtpCenterSpawn = true;
@@ -177,11 +177,11 @@ public final class EssentialsConfig {
         syncKeepInventoryGamerule = c.getBoolean("death.sync-gamerule", true);
 
         rtpEnabled = c.getBoolean("rtp.enabled", true);
-        rtpMinRadius = Math.max(0, c.getInt("rtp.min-radius", 500));
-        rtpMaxRadius = Math.max(rtpMinRadius + 1, c.getInt("rtp.max-radius", 8000));
+        rtpMinRadius = Math.max(0, c.getInt("rtp.min-radius", 1600));
+        rtpMaxRadius = Math.max(rtpMinRadius + 1, c.getInt("rtp.max-radius", 16000));
         rtpMinY = c.getInt("rtp.min-y", 40);
         rtpMaxY = c.getInt("rtp.max-y", 200);
-        rtpMaxAttempts = Math.max(1, c.getInt("rtp.max-attempts", 24));
+        rtpMaxAttempts = Math.max(1, c.getInt("rtp.max-attempts", 40));
         rtpCooldownSeconds = Math.max(0, c.getInt("rtp.cooldown-seconds", 60));
         rtpAvoidClaims = c.getBoolean("rtp.avoid-claims", true);
         rtpCenterSpawn = c.getBoolean("rtp.center-on-spawn", true);

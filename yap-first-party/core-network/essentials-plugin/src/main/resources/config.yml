@@ -82,14 +82,15 @@ rtp:
   # Empty list = any world. Prefer overworld for survival RTP.
   worlds:
     - world
-  min-radius: 500
-  max-radius: 8000
+  # 100 chunks ≈ 1600 blocks from hub /setspawn
+  min-radius: 1600
+  max-radius: 16000
   min-y: 40
   max-y: 200
-  max-attempts: 24
+  max-attempts: 40
   cooldown-seconds: 60
   avoid-claims: true
-  # Sample around world spawn; set false to use center-x / center-z.
+  # Sample around Essentials /setspawn (falls back to world spawn)
   center-on-spawn: true
   center-x: 0.0
   center-z: 0.0

@@ -74,6 +74,7 @@ public final class EssentialsPlugin extends JavaPlugin {
         pm.registerEvents(new DeathKeepListener(this), this);
         pm.registerEvents(new VanishListener(vanish), this);
         pm.registerEvents(new SpawnJoinListener(this, config, spawnStore), this);
+        pm.registerEvents(rtp, this);
         blockReach = new BlockReachListener(this);
         pm.registerEvents(blockReach, this);
         blockReach.applyOnline();

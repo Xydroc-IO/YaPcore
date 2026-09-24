@@ -25,7 +25,7 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
             "wand", "pos1", "pos2", "create", "delete", "list", "info",
             "settarget", "setperm", "setcooldown", "setmessage", "setcolor", "setarrival",
             "setshape", "paint",
-            "enable", "disable", "go", "reload");
+            "enable", "disable", "go", "reload", "purge");
 
     private final PortalsPlugin plugin;
     private final PortalWandListener wandListener;
@@ -47,12 +47,13 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 0) {
             sender.sendMessage("§e/portal wand§7 · §fpos1§7 · §fpos2§7 · §fcreate <name> <server> [color]");
-            sender.sendMessage("§e/portal delete|list|info|enable|disable|go|reload");
+            sender.sendMessage("§e/portal delete|list|info|enable|disable|go|reload|purge");
             sender.sendMessage("§e/portal settarget|setperm|setcooldown|setmessage|setcolor|setarrival|setshape <name> …");
             sender.sendMessage("§e/portal paint <name|off> §7· wand left adds, right removes");
             sender.sendMessage("§7Shapes: /portal setshape <shape> while inside, or setshape <name> <shape>.");
             sender.sendMessage("§7Arrival: spawn (default /setspawn), rtp (wild), or home (/sethome).");
             sender.sendMessage("§7Same-server spawn pad: create with this server-id as target + setarrival spawn.");
+            sender.sendMessage("§7/portal purge §8— remove orphan spinning discs (deleted pads / empty servers).");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -75,6 +76,11 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
             case "enable" -> metaOps.handleEnable(sender, args, true);
             case "disable" -> metaOps.handleEnable(sender, args, false);
             case "go", "enter" -> metaOps.handleGo(sender, args);
+            case "purge" -> {
+                int n = plugin.portalService().visuals().purgeOrphans(plugin.portalService().list());
+                sender.sendMessage("§aPurged §f" + n + " §aorphan portal disc(s) from loaded chunks.");
+                yield true;
+            }
             case "reload" -> {
                 plugin.reloadAll();
                 YapMessages.reloaded(sender, "YaPPortals");
