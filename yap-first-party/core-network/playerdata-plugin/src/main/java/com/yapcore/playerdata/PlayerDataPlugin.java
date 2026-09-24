@@ -102,18 +102,19 @@ public final class PlayerDataPlugin extends JavaPlugin {
         } catch (Exception e) {
             getLogger().warning("Could not clear startup session locks: " + e.getMessage());
         }
-        // One-shot: if this backend shares global, pull orphan hub (lobby) gear/bags into it.
+        // Restart-dupe fix: never auto-merge lobby→global on enable (fleet boots used to
+        // re-inject the same orphan gear into empty hotbar/bag slots on every restart).
+        // Blank leftover lobby orphan rows; intentional merge is /yapdata recoverprofile.
         if ("global".equalsIgnoreCase(config.inventoryProfile())) {
             try {
-                var recovered = new com.yapcore.playerdata.db.ProfileRecovery(database, getLogger())
-                        .mergeAll("lobby", "global");
-                if (recovered.itemsMoved() > 0 || recovered.bagPagesMerged() > 0
-                        || recovered.inventoriessMerged() > 0) {
-                    getLogger().info("Merged orphan lobby profile → global (items="
-                            + recovered.itemsMoved() + ", bagPages=" + recovered.bagPagesMerged() + ")");
+                int cleared = new com.yapcore.playerdata.db.ProfileRecovery(database, getLogger())
+                        .retireOrphanProfile("lobby");
+                if (cleared > 0) {
+                    getLogger().info("Blanked orphan lobby profile gear for " + cleared
+                            + " player(s) (no merge — stops restart inv/bag dupes)");
                 }
             } catch (Exception e) {
-                getLogger().warning("Lobby→global profile recovery skipped: " + e.getMessage());
+                getLogger().warning("Lobby orphan retire skipped: " + e.getMessage());
             }
         }
         SessionLock locks = new SessionLock(repository, config);
@@ -127,6 +128,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
 
         BalanceStore balances = new BalanceStore(sync, repository, getLogger());
         playerDataService = new PlayerDataServiceImpl(this, config, locks, repository, authRepo, balances);
+        playerDataService.bindSync(sync);
         playtime = new PlaytimeTracker(this, repository);
         playerDataService.bindPlaytime(playtime);
         getServer().getServicesManager().register(
@@ -154,6 +156,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
         if (config.featureBackpack()) {
             BackpackRepository backpackRepo = new BackpackRepository(database);
             backpack = new BackpackService(this, config, sync, backpackRepo);
+            playerDataService.bindBackpack(backpack);
             menus.bindBackpack(backpack);
             playerFeatures.bindBackpack(backpack);
             BagCommands bagCommands = new BagCommands(this, backpack, backpackRepo, sync);

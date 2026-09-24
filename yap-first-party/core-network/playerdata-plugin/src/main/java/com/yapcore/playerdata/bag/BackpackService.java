@@ -206,23 +206,32 @@ public final class BackpackService {
 
     public void flushAllOnlineBlocking() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            Inventory top = player.getOpenInventory().getTopInventory();
-            BackpackHolder holder = BackpackInventories.bag(top);
-            if (holder == null) {
-                continue;
-            }
-            ItemStack[] stored = new ItemStack[STORAGE_SLOTS];
-            for (int i = 0; i < STORAGE_SLOTS; i++) {
-                ItemStack stack = top.getItem(i);
-                stored[i] = stack != null && !isNav(stack) ? stack : null;
-            }
-            try {
-                repository.save(holder.owner(), config.inventoryProfile(), holder.page(),
-                        ItemSerializer.serialize(stored));
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "backpack shutdown save " + player.getName(), e);
-            }
+            flushOpenBagBlocking(player);
         }
+    }
+
+    /** Persist the currently open bag page (if any) and close it. Region/entity thread. */
+    public void flushOpenBagBlocking(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        Inventory top = player.getOpenInventory().getTopInventory();
+        BackpackHolder holder = BackpackInventories.bag(top);
+        if (holder == null) {
+            return;
+        }
+        ItemStack[] stored = new ItemStack[STORAGE_SLOTS];
+        for (int i = 0; i < STORAGE_SLOTS; i++) {
+            ItemStack stack = top.getItem(i);
+            stored[i] = stack != null && !isNav(stack) ? stack : null;
+        }
+        try {
+            repository.save(holder.owner(), config.inventoryProfile(), holder.page(),
+                    ItemSerializer.serialize(stored));
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "backpack transfer/shutdown save " + player.getName(), e);
+        }
+        player.closeInventory();
     }
 
     /**

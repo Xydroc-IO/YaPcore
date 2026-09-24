@@ -111,8 +111,14 @@ public final class SyncService {
         ready.remove(uuid);
         pendingApply.remove(uuid);
 
-        if (auth != null && auth.isActive()) {
+        // Always clear before DB apply when invent sync is on — vanilla player.dat can
+        // otherwise briefly coexist with the synced profile (hotbar flash / rare dupes).
+        if (config.syncInventory()) {
             player.getInventory().clear();
+        }
+        if (config.syncEnderchest()) {
+            player.getEnderChest().clear();
+        } else if (auth != null && auth.isActive()) {
             player.getEnderChest().clear();
         }
 
@@ -234,10 +240,8 @@ public final class SyncService {
         ready.remove(uuid);
         loading.remove(uuid);
 
-        // Release the dual-login lock immediately so Link soft-switch / hub rejoin
-        // can proceed while we still save the profile asynchronously.
-        releaseQuiet(uuid);
-
+        // Save before unlock — releasing first let Link soft-switch join the next
+        // backend on a stale DB row while this quit snapshot was still in flight (dupe).
         YapSched.async(plugin, () -> {
             try {
                 if (snapshot != null) {
@@ -247,7 +251,36 @@ public final class SyncService {
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Failed to save data for " + player.getName(), e);
             } finally {
+                releaseQuiet(uuid);
                 balances.remove(uuid);
+            }
+        });
+    }
+
+    /**
+     * Snapshot + save profile (and optional open bag), then release the session lock.
+     * Call on the player's entity thread before BungeeCord Connect.
+     */
+    public java.util.concurrent.CompletableFuture<Void> flushAndReleaseForTransfer(
+            UUID uuid, com.yapcore.playerdata.bag.BackpackService backpack) {
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null || !player.isOnline()) {
+            return java.util.concurrent.CompletableFuture.runAsync(() -> releaseQuiet(uuid));
+        }
+        if (backpack != null) {
+            backpack.flushOpenBagBlocking(player);
+        }
+        PlayerRecord snap = ready.contains(uuid) ? snapshot(player) : null;
+        return java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                if (snap != null) {
+                    mergeUnsyncedFields(snap);
+                    repository.saveProfile(snap);
+                }
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Transfer flush save failed for " + uuid, e);
+            } finally {
+                releaseQuiet(uuid);
             }
         });
     }

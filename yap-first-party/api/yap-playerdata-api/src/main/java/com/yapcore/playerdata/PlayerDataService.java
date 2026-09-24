@@ -19,6 +19,15 @@ public interface PlayerDataService {
 
     CompletableFuture<Void> releaseSessionLock(UUID uuid, String serverId);
 
+    /**
+     * Persist this player's profile (and open bag page) then release the session lock.
+     * Call before cross-server Connect so the destination cannot load a stale inventory.
+     * Must be invoked on the player's region/entity thread.
+     */
+    default CompletableFuture<Void> flushAndReleaseForTransfer(UUID uuid) {
+        return releaseSessionLock(uuid, serverId());
+    }
+
     CompletableFuture<Optional<String>> lastKnownIp(UUID uuid);
 
     /** Whether economy features are enabled in YaPPlayerData. */

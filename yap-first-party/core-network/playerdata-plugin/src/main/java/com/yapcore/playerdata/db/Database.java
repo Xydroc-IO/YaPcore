@@ -253,6 +253,16 @@ public final class Database implements AutoCloseable {
                       PRIMARY KEY (uuid, profile, page)
                     )
                     """.formatted(blob, touchUpdated));
+            // Per-uuid claim so lobby→global recovery cannot re-inject on every fleet restart.
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS profile_recovery_done (
+                      from_profile VARCHAR(64) NOT NULL,
+                      to_profile VARCHAR(64) NOT NULL,
+                      uuid CHAR(36) NOT NULL,
+                      recovered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      PRIMARY KEY (from_profile, to_profile, uuid)
+                    )
+                    """);
             tryAlter(st, "ALTER TABLE players ADD COLUMN play_minutes INT NOT NULL DEFAULT 0");
             migrateLegacyProfiles(c);
         }

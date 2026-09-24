@@ -20,8 +20,9 @@ import java.util.logging.Logger;
  * Merges inventory / enderchest / bag pages from an orphan profile (e.g. {@code lobby}
  * after switching that backend to {@code global}) into the destination profile.
  * <p>
- * Never deletes the source row — source stays as a backup. Only fills empty dest slots
- * so existing global/survival gear is kept.
+ * Each UUID is claimed once via {@code profile_recovery_done} so concurrent fleet
+ * restarts cannot re-inject the same orphan gear into empty slots (inventory/hotbar/bag
+ * dupes). After a successful merge the source profile is blanked.
  */
 public final class ProfileRecovery {
 
@@ -88,6 +89,11 @@ public final class ProfileRecovery {
         if (uuid == null || from.equals(to)) {
             return MergeOne.EMPTY;
         }
+        // Claim first — concurrent lobby/survival/factions boots must not each merge
+        // the same orphan items into empty global slots.
+        if (!tryClaim(uuid, from, to)) {
+            return MergeOne.EMPTY;
+        }
         ensureDestProfile(uuid, to);
 
         int items = 0;
@@ -117,7 +123,87 @@ public final class ProfileRecovery {
         }
 
         int bagPages = mergeBagPages(uuid, from, to);
+        // Retire the orphan so a later restart cannot fill emptied slots again.
+        clearSourceProfile(uuid, from);
         return new MergeOne(invTouched, enderTouched, bagPages, items);
+    }
+
+    /**
+     * Blank orphan profile gear without merging (stops restart re-injection when a prior
+     * merge already claimed the UUID, or when auto-recovery is disabled).
+     */
+    public int retireOrphanProfile(String profile) throws SQLException {
+        String from = norm(profile);
+        List<UUID> uuids = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT DISTINCT uuid FROM player_profiles WHERE profile = ?
+                     UNION
+                     SELECT DISTINCT uuid FROM player_backpack_pages WHERE profile = ?
+                     """)) {
+            ps.setString(1, from);
+            ps.setString(2, from);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    uuids.add(UUID.fromString(rs.getString(1)));
+                }
+            }
+        }
+        int cleared = 0;
+        for (UUID uuid : uuids) {
+            if (sourceHasGear(uuid, from)) {
+                clearSourceProfile(uuid, from);
+                cleared++;
+            }
+        }
+        if (log != null && cleared > 0) {
+            log.info("Retired orphan profile '" + from + "' for " + cleared + " player(s) (blanked, no merge)");
+        }
+        return cleared;
+    }
+
+    /** @return true if this JVM won the claim (first insert wins across the fleet). */
+    boolean tryClaim(UUID uuid, String from, String to) throws SQLException {
+        String sql = database.dialect().insertIgnore(
+                "profile_recovery_done",
+                List.of("from_profile", "to_profile", "uuid"));
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, from);
+            ps.setString(2, to);
+            ps.setString(3, uuid.toString());
+            return ps.executeUpdate() > 0;
+        }
+    }
+
+    private boolean sourceHasGear(UUID uuid, String profile) throws SQLException {
+        PlayerSnapshot src = loadProfile(uuid, profile);
+        if (src != null) {
+            if (!isBlank(ItemSerializer.serialize(src.inventory), 41)
+                    || !isBlank(ItemSerializer.serialize(src.enderchest), 27)) {
+                return true;
+            }
+        }
+        Map<Integer, byte[]> bags = loadBagPages(uuid, profile);
+        for (byte[] blob : bags.values()) {
+            if (!isBlank(blob, 45)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void clearSourceProfile(UUID uuid, String profile) throws SQLException {
+        PlayerSnapshot existing = loadProfile(uuid, profile);
+        if (existing != null) {
+            saveProfile(uuid, profile, existing.xp, existing.level, existing.health,
+                    existing.food, existing.saturation,
+                    new ItemStack[41], new ItemStack[27]);
+        }
+        Map<Integer, byte[]> pages = loadBagPages(uuid, profile);
+        for (Integer page : pages.keySet()) {
+            saveBagPage(uuid, profile, page, ItemSerializer.empty(45));
+        }
     }
 
     private int mergeBagPages(UUID uuid, String from, String to) throws SQLException {
@@ -370,7 +456,7 @@ public final class ProfileRecovery {
         static final MergeOne EMPTY = new MergeOne(false, false, 0, 0);
     }
 
-    private record MergeStacks(ItemStack[] result, List<ItemStack> overflow, int moved) {
+    record MergeStacks(ItemStack[] result, List<ItemStack> overflow, int moved) {
     }
 
     private record PlayerSnapshot(

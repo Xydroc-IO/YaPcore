@@ -2,11 +2,13 @@ package com.yapcore.playerdata.service;
 
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.PlayerDataService;
+import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.db.AuthRepository;
 import com.yapcore.playerdata.db.PlayerRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.sync.PlaytimeTracker;
 import com.yapcore.playerdata.sync.SessionLock;
+import com.yapcore.playerdata.sync.SyncService;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
@@ -25,6 +27,8 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
     private final AuthRepository authRepository;
     private final BalanceStore balances;
     private PlaytimeTracker playtime;
+    private SyncService sync;
+    private BackpackService backpack;
 
     public PlayerDataServiceImpl(JavaPlugin plugin, PlayerDataConfig config, SessionLock locks,
                                  PlayerRepository repository, AuthRepository authRepository,
@@ -39,6 +43,14 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
 
     public void bindPlaytime(PlaytimeTracker playtime) {
         this.playtime = playtime;
+    }
+
+    public void bindSync(SyncService sync) {
+        this.sync = sync;
+    }
+
+    public void bindBackpack(BackpackService backpack) {
+        this.backpack = backpack;
     }
 
     @Override
@@ -94,6 +106,14 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
                 plugin.getLogger().warning("releaseSessionLock failed: " + e.getMessage());
             }
         });
+    }
+
+    @Override
+    public CompletableFuture<Void> flushAndReleaseForTransfer(UUID uuid) {
+        if (sync == null) {
+            return releaseSessionLock(uuid, config.serverId());
+        }
+        return sync.flushAndReleaseForTransfer(uuid, backpack);
     }
 
     @Override

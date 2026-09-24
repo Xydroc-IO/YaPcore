@@ -188,7 +188,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("recoverprofile")) {
             String p = args[1].toLowerCase(Locale.ROOT);
-            return Stream.of("lobby", "creative", "survival", "factions")
+            return Stream.of("lobby", "creative", "survival", "factions", "skyblock")
                     .filter(s -> s.startsWith(p))
                     .toList();
         }

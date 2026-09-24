@@ -25,11 +25,11 @@ See **[YAPDB.md](YAPDB.md)** — shared `yap-db.jar` pool. Default is MariaDB; P
 YaPPlayerData prefers the shared YaPDB pool (`use-shared-yapdb: true`). Multi-backend: same JDBC, unique `server-id` (MariaDB or Postgres — not SQLite).
 
 **Fleet / portals:** product defaults use `inventory-profile: global` and `sync.inventory: true`
-so hub → survival (YaPPortals, `/hub`, server selector) keeps the same inventory, enderchest,
-XP, and vitals — including **YaPItems** custom weapons (full ItemStack + PDC). Minigame /
-creative backends should use `inventory-profile: server` (profile key = `server-id`) so they
-do **not** share that gear. Each backend must keep a **different** `server-id` (fleet stamps
-this). Item *definitions* sync separately via the YaPItems catalog (see
+so hub/lobby ↔ survival ↔ factions (YaPPortals, `/hub`, server selector) keep the same inventory,
+enderchest, XP, and vitals — including **YaPItems** custom weapons (full ItemStack + PDC).
+**Creative** and **skyblock** use `inventory-profile: server` (profile key = `server-id`) so their
+gear stays private to that backend. Each backend must keep a **different** `server-id` (fleet
+stamps this). Item *definitions* sync separately via the YaPItems catalog (see
 [YAPITEMS.md](../plugins/YAPITEMS.md)).
 
 ## Session lock (double-login)
@@ -37,13 +37,18 @@ this). Item *definitions* sync separately via the YaPItems catalog (see
 Always on. Prevents the same UUID being online on two backends at once:
 
 - Acquire `lock_server` / `lock_until` on join; refresh on autosave; **release immediately on quit**
-  (profile save continues async so Link soft-switch / `/hub` is not blocked)
+  (profile saves **before** the session lock is released so Link soft-switch / `/hub`
+   cannot load a stale inventory on the next backend — unlock-before-save caused dupes)
 - Contested lock → kick with holder server name
 - Async pre-login rejects early when another server holds a live lock (short retry for transfers)
 - Stuck lock: `/yapdata unlock <player>` — or restart the holder backend (clears its locks on enable)
 - Crash / kill of a backend: Link clears the lock when that backend is **down**; startup also wipes
   locks for that `server-id`
 - **Save path:** snapshot profile on quit, `repository.saveProfile` on Bukkit async — I/O off main
+- **Orphan lobby recovery:** do **not** auto-merge `lobby`→`global` on every boot (that re-filled
+  empty hotbar/bag slots from leftover lobby rows on each fleet restart = dupes). Startup only
+  **blanks** leftover lobby orphan gear. Intentional merge: `/yapdata recoverprofile lobby *`
+  (claims each UUID once in `profile_recovery_done`, then blanks the source).
 
 `lock-ttl-seconds` (default 120) auto-expires crashed holds if the holder stays marked online.
 
