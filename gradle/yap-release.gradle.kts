@@ -101,6 +101,7 @@ tasks.register("assembleRelease") {
             "yap-mobs.jar",
             "yap-skills.jar",
             "yap-dungeons.jar",
+            "yap-block.jar",
             "yap-disasters.jar",
             "yap-420.jar",
         )

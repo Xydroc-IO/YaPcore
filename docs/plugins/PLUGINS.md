@@ -844,6 +844,61 @@ Ships **on** (`enabled: true`). Fleet seeds `yap-dungeons.jar` with skills/items
 
 ---
 
+## YaPblock
+
+Optional gameplay plugin (`yap-block.jar`). Fixed-grid **skyblock** islands with protection, invites, upgrades, cobble generators, and level scanning.
+
+Fleet seeds a dedicated **`skyblock`** backend (`:25571`, inventory-profile `server` / private, YaPblock on / YaPFactions off). See [yapblock.md](../how-to/plugins/yapblock.md).
+
+## Requirements
+
+- **YaPDB** (soft; shared MariaDB/Postgres/SQLite pool)
+- **YaPWorld** (soft; preferred world create + optional schematic paste)
+- **YaPPlayerData** (soft; upgrade withdraw)
+- Ships `enabled: true` — set `enabled: false` in `plugins/YaPblock/config.yml` to soft-off
+
+## Player loop
+
+1. `/is create` → void world `yapblock`, spiral grid slot, starter pack (or schematic).
+2. `/is home` / `/is sethome`; invite with `/is invite` → `/is accept`.
+3. `/is settings` toggles PVP / MOB_SPAWN / FIRE / PUBLIC_VISIT / LOCK.
+4. `/is upgrade size|members|generator` (economy).
+5. `/is level` scans block values; `/is top` leaderboard.
+6. Void fall (`Y < void-y`) teleports home.
+
+## Commands
+
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/is` … | `yapblock.use` | Island player commands |
+| `/is visit` | `yapblock.visit` | Visit another island |
+| `/is upgrade` | `yapblock.upgrade` | Buy upgrades |
+| `/yapblock reload\|tp\|disband\|setlevel` | `yapblock.admin` | Admin |
+
+## Placeholders
+
+- `%yapblock_level%` / `%yapblock_rank%`
+- `%yapblock_owner%` / `%yapblock_members%`
+- `%yapblock_size%` / `%yapblock_gen%`
+
+## API
+
+```java
+IslandServices.find().ifPresent(islands ->
+    islands.createIsland(player));
+```
+
+Jar: `yap-block-api.jar` (`com.yapcore.yapblock.IslandService`).
+
+## Install
+
+```bash
+gradle installGameplayDefaults
+```
+
+
+---
+
 ## Stacker
 
 First-party **VortexStacker-class** mob / item / spawner stacker for YaPcore /

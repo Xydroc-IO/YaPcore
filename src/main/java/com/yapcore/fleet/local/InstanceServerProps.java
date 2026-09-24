@@ -55,21 +55,28 @@ public final class InstanceServerProps {
             Path rootDir, FleetInstance instance, Map<String, String> updates) throws IOException {
         Path file = propsFile(rootDir, instance);
         Files.createDirectories(file.getParent());
+        patchFile(file, updates);
+        return read(rootDir, instance);
+    }
+
+    /** Patch known keys into an existing {@code server.properties} file. */
+    public static void patchFile(Path file, Map<String, String> updates) throws IOException {
+        if (file == null || updates == null || updates.isEmpty()) {
+            return;
+        }
+        Files.createDirectories(file.getParent());
         Properties p = load(file);
-        if (updates != null) {
-            for (Map.Entry<String, String> e : updates.entrySet()) {
-                String key = e.getKey() == null ? "" : e.getKey().trim();
-                if (key.isEmpty() || !isAllowed(key)) {
-                    continue;
-                }
-                String val = e.getValue() == null ? "" : e.getValue().trim();
-                p.setProperty(key, val);
+        for (Map.Entry<String, String> e : updates.entrySet()) {
+            String key = e.getKey() == null ? "" : e.getKey().trim();
+            if (key.isEmpty() || !isAllowed(key)) {
+                continue;
             }
+            String val = e.getValue() == null ? "" : e.getValue().trim();
+            p.setProperty(key, val);
         }
         try (OutputStream out = Files.newOutputStream(file)) {
-            p.store(out, "YaP fleet instance " + instance.id());
+            p.store(out, "YaP fleet instance");
         }
-        return read(rootDir, instance);
     }
 
     /**

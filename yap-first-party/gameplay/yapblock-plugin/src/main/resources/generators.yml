@@ -1,0 +1,28 @@
+# Cobble generator tiers — BlockFormEvent replacements when lava/water form stone/cobble.
+# Weights are relative; higher = more common.
+tiers:
+  "0":
+    COBBLESTONE: 80
+    STONE: 20
+  "1":
+    COBBLESTONE: 50
+    STONE: 30
+    COAL_ORE: 12
+    IRON_ORE: 8
+  "2":
+    COBBLESTONE: 35
+    STONE: 25
+    COAL_ORE: 15
+    IRON_ORE: 12
+    GOLD_ORE: 8
+    REDSTONE_ORE: 5
+  "3":
+    COBBLESTONE: 20
+    STONE: 20
+    IRON_ORE: 15
+    GOLD_ORE: 12
+    REDSTONE_ORE: 10
+    LAPIS_ORE: 8
+    DIAMOND_ORE: 5
+    EMERALD_ORE: 5
+    ANCIENT_DEBRIS: 5

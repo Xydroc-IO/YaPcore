@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -85,8 +86,77 @@ public final class InstanceLayout {
         FoliaSurface.ensureMarker(dir);
         PaperOps.ensure(dir, config);
         writeServerIdHint(dir, instance.serverId());
+        applyBackendGameProfile(rootDir, dir, instance.serverId());
         LOG.info("Prepared fleet instance " + instance.id() + " jar=" + jar.getFileName()
                 + " port=" + instance.port());
+    }
+
+    /**
+     * Per-backend toggles after seed (skyblock enables YaPblock / disables factions land, etc.).
+     * Never deletes jars — only patches known config keys when files exist.
+     */
+    static void applyBackendGameProfile(Path rootDir, Path dir, String serverId) throws IOException {
+        String id = serverId == null ? "" : serverId.trim().toLowerCase(Locale.ROOT);
+        if ("skyblock".equals(id) || id.endsWith("-skyblock") || id.startsWith("skyblock-")) {
+            ensurePluginConfigFromDefaults(rootDir, dir, "YaPblock");
+            patchYamlEnabled(dir.resolve("plugins/YaPblock/config.yml"), true);
+            patchYamlEnabled(dir.resolve("plugins/YaPFactions/config.yml"), false);
+            patchYamlEnabled(dir.resolve("plugins/yap-factions/config.yml"), false);
+            // First island sits at 0,0 — hub-style spawn-pad would deny build/chest there.
+            patchNestedYamlBoolean(
+                    dir.resolve("plugins/YaPRegions/config.yml"), "spawn-pad", "enabled", false);
+            patchNestedYamlBoolean(
+                    dir.resolve("plugins/yap-regions/config.yml"), "spawn-pad", "enabled", false);
+            patchEssentialsForceGamemode(
+                    dir.resolve("plugins/YaPEssentials/config.yml"), "survival");
+            // Island protection replaces claims; skills/420 are survival-mode features.
+            patchYamlEnabled(dir.resolve("plugins/YaPSkills/config.yml"), false);
+            patchYamlEnabled(dir.resolve("plugins/yap-skills/config.yml"), false);
+            patchNestedYamlBoolean(dir.resolve("plugins/YaPClaims/config.yml"), "claims", "enabled", false);
+            patchNestedYamlBoolean(dir.resolve("plugins/yap-claims/config.yml"), "claims", "enabled", false);
+            patchYamlEnabled(dir.resolve("plugins/YaP420/config.yml"), false);
+            patchYamlEnabled(dir.resolve("plugins/yap-420/config.yml"), false);
+            patchYamlEnabled(dir.resolve("plugins/YaPDungeons/config.yml"), false);
+            patchYamlEnabled(dir.resolve("plugins/yap-dungeons/config.yml"), false);
+            Path props = dir.resolve("server.properties");
+            if (Files.isRegularFile(props)) {
+                InstanceServerProps.patchFile(props, Map.of(
+                        "motd", "YaPcore Skyblock",
+                        "gamemode", "survival",
+                        "force-gamemode", "false",
+                        "difficulty", "normal",
+                        "spawn-monsters", "true",
+                        "spawn-animals", "true"));
+            }
+        }
+    }
+
+    /** Copy {@code config/defaults/plugins/{folder}/config.yml} when the instance lacks it. */
+    static void ensurePluginConfigFromDefaults(Path rootDir, Path instanceDir, String folder)
+            throws IOException {
+        Path dest = instanceDir.resolve("plugins").resolve(folder).resolve("config.yml");
+        if (Files.isRegularFile(dest)) {
+            return;
+        }
+        Path src = rootDir.resolve("config/defaults/plugins").resolve(folder).resolve("config.yml");
+        if (!Files.isRegularFile(src)) {
+            return;
+        }
+        Files.createDirectories(dest.getParent());
+        Files.copy(src, dest, StandardCopyOption.COPY_ATTRIBUTES);
+    }
+
+    static void patchYamlEnabled(Path cfg, boolean enabled) throws IOException {
+        if (!Files.isRegularFile(cfg)) {
+            return;
+        }
+        String text = Files.readString(cfg);
+        if (text.contains("enabled:")) {
+            text = text.replaceAll("(?m)^(\\s*enabled:\\s*).*$", "$1" + enabled);
+        } else {
+            text = "enabled: " + enabled + "\n" + text;
+        }
+        Files.writeString(cfg, text);
     }
 
     /**
@@ -449,12 +519,18 @@ public final class InstanceLayout {
     }
 
     /**
-     * Lobby / survival / factions share {@code global}. Creative (and other minigame ids)
-     * keep a private profile keyed by {@code server-id}.
+     * Inventory profile stamped into YaPPlayerData on layout ensure.
+     * <ul>
+     *   <li>{@code creative*} / {@code skyblock*} → {@code server} (private to that server-id)</li>
+     *   <li>else → {@code global} (lobby/hub ↔ survival ↔ factions)</li>
+     * </ul>
      */
     static String defaultInventoryProfile(String serverId) {
         String id = serverId == null ? "" : serverId.trim().toLowerCase(Locale.ROOT);
         if ("creative".equals(id) || id.endsWith("-creative") || id.startsWith("creative-")) {
+            return "server";
+        }
+        if ("skyblock".equals(id) || id.endsWith("-skyblock") || id.startsWith("skyblock-")) {
             return "server";
         }
         return "global";
@@ -482,6 +558,58 @@ public final class InstanceLayout {
             text = text.replaceAll("(?m)^(\\s*inventory-profile:\\s*).*$", "$1" + profile);
         } else {
             text = text + "\ninventory-profile: " + profile + "\n";
+        }
+        Files.writeString(cfg, text);
+    }
+
+    /**
+     * Set {@code parentKey: / childKey:} under a simple two-level YAML map (spaces indent).
+     */
+    static void patchNestedYamlBoolean(Path cfg, String parentKey, String childKey, boolean value)
+            throws IOException {
+        if (!Files.isRegularFile(cfg) || parentKey == null || childKey == null) {
+            return;
+        }
+        String[] lines = Files.readString(cfg).split("\\R", -1);
+        StringBuilder out = new StringBuilder();
+        boolean inParent = false;
+        boolean patched = false;
+        for (String line : lines) {
+            if (line.matches("^" + java.util.regex.Pattern.quote(parentKey) + ":\\s*(#.*)?$")) {
+                inParent = true;
+                out.append(line).append('\n');
+                continue;
+            }
+            if (inParent) {
+                if (!line.isEmpty() && !line.startsWith(" ") && !line.startsWith("\t") && !line.startsWith("#")) {
+                    inParent = false;
+                } else if (line.matches("^\\s+" + java.util.regex.Pattern.quote(childKey) + ":\\s*.*$")) {
+                    String indent = line.substring(0, line.indexOf(childKey));
+                    out.append(indent).append(childKey).append(": ").append(value).append('\n');
+                    patched = true;
+                    continue;
+                }
+            }
+            out.append(line).append('\n');
+        }
+        if (patched) {
+            String text = out.toString();
+            if (!Files.readString(cfg).endsWith("\n") && text.endsWith("\n")) {
+                text = text.substring(0, text.length() - 1);
+            }
+            Files.writeString(cfg, text);
+        }
+    }
+
+    static void patchEssentialsForceGamemode(Path cfg, String mode) throws IOException {
+        if (!Files.isRegularFile(cfg) || mode == null) {
+            return;
+        }
+        String text = Files.readString(cfg);
+        if (text.contains("force-gamemode:")) {
+            text = text.replaceAll("(?m)^(\\s*force-gamemode:\\s*).*$", "$1" + mode);
+        } else {
+            text = text + "\nforce-gamemode: " + mode + "\n";
         }
         Files.writeString(cfg, text);
     }

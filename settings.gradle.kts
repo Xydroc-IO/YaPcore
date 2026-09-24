@@ -243,6 +243,12 @@ project(":yap-dungeons-api").projectDir = file("yap-first-party/api/yap-dungeons
 include("dungeons-plugin")
 project(":dungeons-plugin").projectDir = file("yap-first-party/gameplay/dungeons-plugin")
 
+include("yap-block-api")
+project(":yap-block-api").projectDir = file("yap-first-party/api/yap-block-api")
+
+include("yapblock-plugin")
+project(":yapblock-plugin").projectDir = file("yap-first-party/gameplay/yapblock-plugin")
+
 include("yap-factions-api")
 project(":yap-factions-api").projectDir = file("yap-first-party/api/yap-factions-api")
 

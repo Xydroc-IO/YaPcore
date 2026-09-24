@@ -13,12 +13,15 @@ final class InstanceLayoutInventoryProfileTest {
     Path root;
 
     @Test
-    void defaultProfileIsGlobalExceptCreative() {
+    void defaultProfileSharesHubSurvivalFactionsIsolatesCreativeSkyblock() {
         assertEquals("global", InstanceLayout.defaultInventoryProfile("lobby"));
+        assertEquals("global", InstanceLayout.defaultInventoryProfile("hub"));
         assertEquals("global", InstanceLayout.defaultInventoryProfile("survival"));
         assertEquals("global", InstanceLayout.defaultInventoryProfile("factions"));
         assertEquals("server", InstanceLayout.defaultInventoryProfile("creative"));
         assertEquals("server", InstanceLayout.defaultInventoryProfile("creative-build"));
+        assertEquals("server", InstanceLayout.defaultInventoryProfile("skyblock"));
+        assertEquals("server", InstanceLayout.defaultInventoryProfile("eu-skyblock"));
     }
 
     @Test

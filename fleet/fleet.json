@@ -53,6 +53,19 @@
       "ramMb": 4000,
       "ramMinMb": 512,
       "address": "127.0.0.1:25568"
+    },
+    {
+      "id": "skyblock",
+      "serverId": "skyblock",
+      "nodeId": "local",
+      "relativeDir": "fleet/instances/skyblock",
+      "port": 25571,
+      "bind": "127.0.0.1",
+      "autoStart": true,
+      "displayName": "Skyblock",
+      "ramMb": 4000,
+      "ramMinMb": 512,
+      "address": "127.0.0.1:25571"
     }
   ],
   "nodes": []

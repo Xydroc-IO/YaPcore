@@ -124,6 +124,9 @@ tasks.register("installGameplayDefaults") {
     if (findProject(":dungeons-plugin") != null) {
         dependsOn(":dungeons-plugin:installIntoPlugins")
     }
+    if (findProject(":yapblock-plugin") != null) {
+        dependsOn(":yapblock-plugin:installIntoPlugins")
+    }
     if (findProject(":disasters-plugin") != null) {
         dependsOn(":disasters-plugin:installIntoPlugins")
     }
@@ -198,6 +201,8 @@ tasks.register("assemblePluginDist") {
         ":skills-plugin:shadowJar",
         ":yap-dungeons-api:jar",
         ":dungeons-plugin:shadowJar",
+        ":yap-block-api:jar",
+        ":yapblock-plugin:shadowJar",
         ":bedrock-ui-plugin:jar",
         ":disasters-plugin:jar",
         ":yap-bedrock-ui-api:jar",
@@ -338,6 +343,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":dungeons-plugin") != null) {
             copyNamed(jarOf(":dungeons-plugin", "shadowJar"), gameplayDir)
         }
+        if (findProject(":yapblock-plugin") != null) {
+            copyNamed(jarOf(":yapblock-plugin", "shadowJar"), gameplayDir)
+        }
         if (findProject(":disasters-plugin") != null) {
             copyNamed(jarOf(":disasters-plugin"), gameplayDir)
         }
@@ -384,6 +392,9 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":yap-dungeons-api") != null) {
             copyNamed(jarOf(":yap-dungeons-api"), apiDir)
+        }
+        if (findProject(":yap-block-api") != null) {
+            copyNamed(jarOf(":yap-block-api"), apiDir)
         }
         if (findProject(":yap-factions-api") != null) {
             copyNamed(jarOf(":yap-factions-api"), apiDir)

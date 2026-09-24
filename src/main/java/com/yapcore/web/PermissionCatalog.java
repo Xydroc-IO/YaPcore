@@ -175,6 +175,12 @@ public final class PermissionCatalog {
                 n("yapskills.others", "Skills others", "View another player's skills"),
                 n("yapskills.admin", "Skills admin", "Reload / grant skills"),
                 n("yapskills.bypass", "Bypass skills XP", "Skip skill XP gains")));
+        out.add(cat("skyblock", "YaPblock", "Grid skyblock islands.",
+                n("yapblock.use", "/is", "Island commands"),
+                n("yapblock.visit", "/is visit", "Visit other islands"),
+                n("yapblock.upgrade", "/is upgrade", "Buy island upgrades"),
+                n("yapblock.admin", "YaPblock admin", "/yapblock reload / tp / disband"),
+                n("yapblock.admin.bypass", "Bypass islands", "Skip island protection")));
         out.add(cat("extras", "Tools & extras", "Stacker, packs, placeholders, and other first-party tools.",
                 n("yapstacker.gui", "Stacker GUI", "Open mob stacker"),
                 n("yapstacker.give", "Stacker give", "Give stacker items"),

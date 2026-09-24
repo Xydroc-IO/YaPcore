@@ -50,12 +50,13 @@ public final class FleetDefaultPlugins {
             "yap-tailor.jar",
             "yap-bedrock-blocks.jar");
 
-    /** Always-on gameplay suite (VIP tools + custom items + skills + dungeons + YaP420). */
+    /** Always-on gameplay suite (VIP tools + custom items + skills + dungeons + YaP420 + skyblock). */
     private static final List<String> GAMEPLAY_DEFAULTS = List.of(
             "yap-items.jar",
             "yap-skills.jar",
             "yap-dungeons.jar",
-            "yap-420.jar");
+            "yap-420.jar",
+            "yap-block.jar");
 
     private static final Set<String> CORE_NETWORK_SET =
             Collections.unmodifiableSet(new LinkedHashSet<>(CORE_NETWORK));

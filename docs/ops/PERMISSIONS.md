@@ -268,6 +268,18 @@ Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [PLUG
 
 Placeholders: `%yapdungeon_highest%`, `%yapdungeon_prestige%`, `%yapdungeon_in_run%`, … — [PLUGINS.md](../plugins/PLUGINS.md).
 
+## YaPblock (`yap-block.jar`, gameplay)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapblock.use` | true | `/is` island commands |
+| `yapblock.visit` | true | `/is visit` |
+| `yapblock.upgrade` | true | `/is upgrade` |
+| `yapblock.admin` | op | `/yapblock reload\|tp\|disband\|setlevel` |
+| `yapblock.admin.bypass` | op | Bypass island protection |
+
+Placeholders: `%yapblock_level%`, `%yapblock_rank%`, `%yapblock_owner%`, … — [PLUGINS.md](../plugins/PLUGINS.md).
+
 ## YaPFactions (`yap-factions.jar`)
 
 | Node | Default | Grants |

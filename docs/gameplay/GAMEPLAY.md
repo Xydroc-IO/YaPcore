@@ -366,6 +366,13 @@ full world height.
 `/region info` shows bounds, **shape**, **priority**, vertices (polygons), and flags.
 New regions start at priority `0`.
 
+**Lobby / hub safe servers:** `plugins/YaPRegions/config.yml` → `safe-servers: [lobby]`
+denies hunger and all damage on that entire backend (no region required).
+
+**Spawn pads:** with `spawn-pad.enabled: true`, YaPRegions creates/updates a `spawn` cuboid
+around world spawn (first boot) and around `/setspawn` (YaPEssentials), applying the built-in
+`spawn` template (`damage` + `hunger` deny).
+
 **World border:** `/region worldborder <name>` (aliases `wb`, `border`) sets the
 vanilla square border on that region's world to the region XZ AABB (center + diameter
 from the longer side). Non-square regions leave a strip outside the region but inside

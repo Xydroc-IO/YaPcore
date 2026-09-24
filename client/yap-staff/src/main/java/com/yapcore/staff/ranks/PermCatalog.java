@@ -197,6 +197,12 @@ public final class PermCatalog {
                 n("yapskills.others", "Skills others", "View others"),
                 n("yapskills.admin", "Skills admin", "Reload / grant"),
                 n("yapskills.bypass", "Bypass XP", "Skip skill XP")));
+        out.add(cat("skyblock", "YaPblock", "Grid skyblock",
+                n("yapblock.use", "/is", "Island commands"),
+                n("yapblock.visit", "/is visit", "Visit islands"),
+                n("yapblock.upgrade", "/is upgrade", "Buy upgrades"),
+                n("yapblock.admin", "YaPblock admin", "Reload / tp / disband"),
+                n("yapblock.admin.bypass", "Bypass islands", "Skip protection")));
         out.add(cat("extras", "Extras", "Stacker, QoL, packs, factions",
                 n("yapstacker.gui", "Stacker GUI", "Open mob stacker"),
                 n("yapstacker.admin", "Stacker admin", "Reload stacker"),

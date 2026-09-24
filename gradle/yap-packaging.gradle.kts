@@ -62,6 +62,7 @@ tasks.register("assembleGameplaySuite") {
         ":items-plugin:jar",
         ":skills-plugin:shadowJar",
         ":dungeons-plugin:shadowJar",
+        ":yapblock-plugin:shadowJar",
         ":disasters-plugin:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
@@ -80,6 +81,7 @@ tasks.register("assembleGameplaySuite") {
             jarOf(":items-plugin") to "yap-items.jar",
             jarOf(":skills-plugin", "shadowJar") to "yap-skills.jar",
             jarOf(":dungeons-plugin", "shadowJar") to "yap-dungeons.jar",
+            jarOf(":yapblock-plugin", "shadowJar") to "yap-block.jar",
             jarOf(":disasters-plugin") to "yap-disasters.jar",
         ).forEach { (src, name) -> src.copyTo(plugins.resolve(name), overwrite = true) }
         project.project(":finetune-modules").tasks.withType(Jar::class.java).forEach { jarTask ->

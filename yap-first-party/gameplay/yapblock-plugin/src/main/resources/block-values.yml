@@ -1,0 +1,21 @@
+# Block values for island level scanning (sum of placed blocks in island bounds).
+# Missing materials default to 0.
+values:
+  DIRT: 1
+  GRASS_BLOCK: 1
+  SAND: 1
+  COBBLESTONE: 1
+  STONE: 1
+  OAK_LOG: 2
+  OAK_PLANKS: 1
+  OAK_LEAVES: 1
+  CHEST: 5
+  CRAFTING_TABLE: 3
+  FURNACE: 5
+  IRON_BLOCK: 25
+  GOLD_BLOCK: 40
+  DIAMOND_BLOCK: 80
+  EMERALD_BLOCK: 90
+  NETHERITE_BLOCK: 200
+  BEACON: 500
+  SPAWNER: 250

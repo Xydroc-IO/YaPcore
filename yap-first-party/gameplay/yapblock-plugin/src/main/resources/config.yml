@@ -1,0 +1,63 @@
+enabled: true
+
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 6
+  minimum-idle: 1
+  connection-timeout-ms: 10000
+
+world:
+  name: yapblock
+  grid-distance: 200
+  paste-y: 64
+
+island:
+  default-size-radius: 50
+  default-max-members: 4
+  default-gen-tier: 0
+  void-y: 8
+
+invites:
+  expire-minutes: 5
+
+schematic:
+  # Leave blank to always use IslandStarterPack (do not pick up unrelated YaPWorld schems).
+  name: ""
+
+upgrades:
+  size:
+    "1":
+      value: 75
+      cost: 5000
+    "2":
+      value: 100
+      cost: 15000
+    "3":
+      value: 150
+      cost: 40000
+  members:
+    "1":
+      value: 6
+      cost: 2500
+    "2":
+      value: 8
+      cost: 7500
+    "3":
+      value: 12
+      cost: 20000
+  generator:
+    "1":
+      value: 1
+      cost: 3000
+    "2":
+      value: 2
+      cost: 10000
+    "3":
+      value: 3
+      cost: 25000

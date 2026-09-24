@@ -1,0 +1,35 @@
+name: YaPblock
+version: '0.0.0.2'
+main: com.yapcore.yapblock.YapblockPlugin
+api-version: '1.21'
+folia-supported: true
+description: Grid skyblock islands with protection, generators, and levels
+authors: [YapLabs]
+depend: []
+softdepend: [YaPDB, YaPWorld, YaPPlayerData, PlaceholderAPI]
+commands:
+  is:
+    description: Island commands
+    usage: /is <create|home|info|...>
+    aliases: [island]
+    permission: yapblock.use
+  yapblock:
+    description: YaPblock admin
+    usage: /yapblock reload|tp|disband|setlevel
+    permission: yapblock.admin
+permissions:
+  yapblock.use:
+    description: Use /is island commands
+    default: true
+  yapblock.visit:
+    description: Visit other players' islands
+    default: true
+  yapblock.upgrade:
+    description: Purchase island upgrades
+    default: true
+  yapblock.admin:
+    description: Admin /yapblock commands
+    default: op
+  yapblock.admin.bypass:
+    description: Bypass island protection
+    default: op

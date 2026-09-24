@@ -74,6 +74,7 @@ Every guide aims for:
 | YaPDisasters | `yap-disasters.jar` | [yapdisasters.md](yapdisasters.md) |
 | YaPGameplayKnobs | `yap-gameplay-knobs.jar` | [yapgameplayknobs.md](yapgameplayknobs.md) |
 | YaPQoL | timber / excavator | [yapqol.md](yapqol.md) |
+| YaPblock | `yap-block.jar` | [yapblock.md](yapblock.md) |
 
 ## Suggested paths
 
@@ -90,3 +91,7 @@ Every guide aims for:
 **Survival land / claims**
 
 1. [yapclaims.md](yapclaims.md) · [yapregions.md](yapregions.md) · [yapfactions.md](yapfactions.md)
+
+**Skyblock**
+
+1. Start fleet `skyblock` → [yapblock.md](yapblock.md) → hub `/portal create to-skyblock skyblock` + `setarrival island`
