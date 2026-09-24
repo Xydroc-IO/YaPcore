@@ -86,6 +86,7 @@ public final class EssentialsPlugin extends JavaPlugin {
         getLogger().info("YaPEssentials ready (server-id=" + config.serverId()
                 + ", spawn-scope=" + config.spawnScopeKey()
                 + ", teleport-on-join=" + config.spawnTeleportOnJoin()
+                + ", force-gamemode=" + config.spawnForceGamemode().map(Enum::name).orElse("off")
                 + ", keep-inventory=" + config.keepInventory()
                 + ", water-waves=" + config.waterWavesEnabled()
                 + ", playerdata-qol=" + (playerFeatures != null) + ").");

@@ -28,18 +28,20 @@ On the destination world (e.g. survival), stand where players should land:
 /spawn
 ```
 
-Cross-server portals land here by default (see [yapportals.md](yapportals.md)).
+Cross-server portals, **`/hub`**, **`/server`**, and mid-session failover land here by default
+(see [yapportals.md](yapportals.md) + [PORTALS.md](../../network/PORTALS.md)).
 
-Hub-style “always spawn on join”:
+Hub-style “always spawn on join” (also used as backup when Link marks SPAWN pending):
 
 ```yaml
 # plugins/YaPEssentials/config.yml
 spawn:
-  teleport-on-join: true   # lobby often true; survival usually false
+  teleport-on-join: true   # lobby + creative recommended; survival/skyblock/factions usually false
+  force-gamemode: adventure  # lobby; blank on survival/skyblock/creative
   scope: server            # per server-id (not global)
 ```
 
-Then `/yapess reload`.
+Then `/yapess reload` (or restart).
 
 ## Player workflows
 

@@ -1,11 +1,14 @@
 package com.yapcore.essentials;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 public final class EssentialsConfig {
 
@@ -29,6 +32,8 @@ public final class EssentialsConfig {
     private String spawnScope = "server";
     private boolean spawnPersistDb = true;
     private boolean spawnTeleportOnJoin = true;
+    /** Blank = do not force; otherwise adventure / survival / creative / spectator. */
+    private String spawnForceGamemode = "";
 
     private boolean featureSpawn = true;
     private boolean featureBack = true;
@@ -134,6 +139,12 @@ public final class EssentialsConfig {
         spawnScope = c.getString("spawn.scope", spawnScope);
         spawnPersistDb = c.getBoolean("spawn.persist-db", spawnPersistDb);
         spawnTeleportOnJoin = c.getBoolean("spawn.teleport-on-join", spawnTeleportOnJoin);
+        spawnForceGamemode = c.getString("spawn.force-gamemode", spawnForceGamemode);
+        if (spawnForceGamemode == null) {
+            spawnForceGamemode = "";
+        } else {
+            spawnForceGamemode = spawnForceGamemode.trim();
+        }
 
         featureSpawn = c.getBoolean("features.spawn", true);
         featureBack = c.getBoolean("features.back", true);
@@ -271,6 +282,24 @@ public final class EssentialsConfig {
 
     public boolean spawnTeleportOnJoin() {
         return spawnTeleportOnJoin;
+    }
+
+    /**
+     * Forced join gamemode for this backend (hub adventure, etc.).
+     * Empty when unset / invalid.
+     */
+    public Optional<GameMode> spawnForceGamemode() {
+        if (spawnForceGamemode == null || spawnForceGamemode.isBlank()) {
+            return Optional.empty();
+        }
+        String raw = spawnForceGamemode.trim().toLowerCase(Locale.ROOT);
+        return switch (raw) {
+            case "adventure", "a", "gma", "2" -> Optional.of(GameMode.ADVENTURE);
+            case "survival", "s", "gms", "0" -> Optional.of(GameMode.SURVIVAL);
+            case "creative", "c", "gmc", "1" -> Optional.of(GameMode.CREATIVE);
+            case "spectator", "sp", "gmsp", "3" -> Optional.of(GameMode.SPECTATOR);
+            default -> Optional.empty();
+        };
     }
 
     public boolean feature(String name) {

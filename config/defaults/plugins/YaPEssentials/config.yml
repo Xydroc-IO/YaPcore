@@ -14,6 +14,8 @@ spawn:
   scope: server
   persist-db: true
   teleport-on-join: true
+  # Lobby/hub: adventure on every join. Blank on survival/creative backends.
+  force-gamemode: adventure
 
 server-id: lobby
 use-shared-yapdb: true

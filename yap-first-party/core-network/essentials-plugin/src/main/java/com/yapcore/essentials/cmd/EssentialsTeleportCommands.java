@@ -13,6 +13,7 @@ import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
 import com.yapcore.messages.YapMessages;
+import com.yapcore.regions.RegionService;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.GameMode;
@@ -87,7 +88,20 @@ final class EssentialsTeleportCommands {
         Player player = (Player) sender;
         ctx.spawnStore.setSpawn(player.getLocation());
         player.sendMessage("§aSpawn set.");
+        ensureSpawnPad(player.getLocation());
         return true;
+    }
+
+    private void ensureSpawnPad(Location location) {
+        try {
+            RegionService regions = Bukkit.getServicesManager().load(RegionService.class);
+            if (regions == null) {
+                return;
+            }
+            regions.ensureSpawnPad(location);
+        } catch (Exception e) {
+            ctx.plugin.getLogger().warning("Spawn-pad region update failed: " + e.getMessage());
+        }
     }
 
     boolean back(CommandSender sender) {

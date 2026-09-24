@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Essentials-class QoL — spawn/TPA/fly plus bag/homes/kits/economy/shops (data via YaPPlayerData)
 website: https://github.com/yaplabs
-softdepend: [YaPPerms, YaPPlayerData, YaPClaims, YaPDisasters]
+softdepend: [YaPPerms, YaPPlayerData, YaPClaims, YaPDisasters, YaPRegions]
 loadbefore: []
 commands:
   spawn:

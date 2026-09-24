@@ -11,6 +11,8 @@ spawn:
   # Hub-style default: every join/reconnect lands at /setspawn (not last logout pos).
   # Set false on survival/minigame backends that should restore logout location.
   teleport-on-join: true
+  # Force this gamemode on every join (blank = off). Lobby should be adventure.
+  force-gamemode: adventure
 
 server-id: lobby
 use-shared-yapdb: true
