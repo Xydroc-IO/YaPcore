@@ -3,18 +3,23 @@
 **Jar:** `yap-chat.jar`  
 Private messages, channels, staff/admin chat, ignore list, clear chat.
 
+Default chat is **global** (cross-server when Link + `network.enabled` are on). Relayed lines show `[server-id]` from other backends.
+
 ## Player use
 
 ```text
 /msg Steve hello
 /r on my way
+/channel              # clickable [Global] [Local] [Trade]… + action-bar hint
 /channel local
-/channel global
+/ch global
 !anyone nearby?          # one-shot local while in global
 /ignore Griefer
 /unignore Griefer
 /ignorelist
 ```
+
+Click a channel button in chat (or use `/ch <name>`) — no client mod required.
 
 ## Staff
 

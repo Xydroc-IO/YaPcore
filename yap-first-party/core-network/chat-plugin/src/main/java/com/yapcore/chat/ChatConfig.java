@@ -37,7 +37,7 @@ public final class ChatConfig {
     private YapMessageBundle messages = YapMessageBundle.fromSection(null);
     private boolean networkEnabled = true;
     private String serverId = "lobby";
-    private Set<String> networkRelayChannels = Set.of("global", "staff", "admin");
+    private Set<String> networkRelayChannels = Set.of("global", "trade", "staff", "admin");
 
     public ChatConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -67,7 +67,7 @@ public final class ChatConfig {
             networkRelayChannels.add(ch.toLowerCase(Locale.ROOT));
         }
         if (networkRelayChannels.isEmpty()) {
-            networkRelayChannels = Set.of("global", "staff", "admin");
+            networkRelayChannels = Set.of("global", "trade", "staff", "admin");
         }
     }
 
@@ -144,6 +144,23 @@ public final class ChatConfig {
     void applyChannelsForTest(String defaultChannelName, Map<String, ChannelDef> channelMap) {
         this.defaultChannel = defaultChannelName == null ? "global" : defaultChannelName.toLowerCase(Locale.ROOT);
         this.channels = channelMap == null ? Map.of() : Map.copyOf(channelMap);
+    }
+
+    /** Unit-test harness: network relay flags without Bukkit YAML. */
+    void applyNetworkForTest(boolean enabled, String id, Set<String> relayChannels) {
+        this.networkEnabled = enabled;
+        this.serverId = id == null || id.isBlank() ? "lobby" : id;
+        if (relayChannels == null || relayChannels.isEmpty()) {
+            this.networkRelayChannels = Set.of("global", "trade", "staff", "admin");
+        } else {
+            Set<String> next = new HashSet<>();
+            for (String ch : relayChannels) {
+                if (ch != null && !ch.isBlank()) {
+                    next.add(ch.toLowerCase(Locale.ROOT));
+                }
+            }
+            this.networkRelayChannels = Set.copyOf(next);
+        }
     }
 
     public Set<String> filterWords() {

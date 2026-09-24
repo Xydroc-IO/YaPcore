@@ -2,6 +2,7 @@ package com.yapcore.chat.service;
 
 import com.yapcore.chat.ChatConfig;
 import com.yapcore.chat.ChatFormat;
+import com.yapcore.chat.ChatRelayOps;
 import com.yapcore.chat.ChatService;
 import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
@@ -9,10 +10,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Locale;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,42 +61,38 @@ public final class ChatServiceImpl implements ChatService {
         }));
     }
 
-    public void forwardLocalChat(String channelId, UUID senderUuid, String senderName, String plainMessage) {
-        if (!config.networkEnabled()) {
-            return;
+    /**
+     * Build the plugin-message payload for a local chat line when network relay applies.
+     * Empty when network is off, channel is not relayed, or inputs are invalid.
+     */
+    public Optional<byte[]> prepareRelayPayload(String channelId, UUID senderUuid,
+                                                String senderName, String plainMessage) {
+        if (!ChatRelayOps.shouldRelay(config, channelId) || senderUuid == null) {
+            return Optional.empty();
         }
-        if (!config.networkRelayChannels().contains(channelId.toLowerCase(Locale.ROOT))) {
+        return Optional.of(ChatRelayOps.encodeBytes(
+                channelId, config.serverId(), senderUuid, senderName, plainMessage));
+    }
+
+    public void forwardLocalChat(String channelId, UUID senderUuid, String senderName, String plainMessage) {
+        Optional<byte[]> payload = prepareRelayPayload(channelId, senderUuid, senderName, plainMessage);
+        if (payload.isEmpty()) {
             return;
         }
         if (Bukkit.getOnlinePlayers().isEmpty()) {
             return;
         }
         Player carrier = Bukkit.getOnlinePlayers().iterator().next();
-        String payload = "RELAY|" + channelId + "|" + config.serverId() + "|"
-                + senderUuid + "|" + senderName + "|" + plainMessage.replace('|', '/');
-        carrier.sendPluginMessage(plugin, PLUGIN_CHANNEL, payload.getBytes(StandardCharsets.UTF_8));
+        carrier.sendPluginMessage(plugin, PLUGIN_CHANNEL, payload.get());
     }
 
     public void handleIncomingRelay(byte[] data) {
-        String payload = new String(data, StandardCharsets.UTF_8);
-        if (!payload.startsWith("RELAY|")) {
+        Optional<ChatRelayOps.RelayPacket> packet = ChatRelayOps.parse(data);
+        if (packet.isEmpty()) {
             return;
         }
-        String[] parts = payload.split("\\|", 6);
-        if (parts.length < 6) {
-            return;
-        }
-        String channelId = parts[1];
-        String serverId = parts[2];
-        UUID senderUuid;
-        try {
-            senderUuid = UUID.fromString(parts[3]);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-        String senderName = parts[4];
-        String message = parts[5];
-        relayNetworkMessage(channelId, serverId, senderUuid, senderName, message);
+        ChatRelayOps.RelayPacket p = packet.get();
+        relayNetworkMessage(p.channelId(), p.serverId(), p.senderUuid(), p.senderName(), p.message());
     }
 
     private void broadcastLocal(String channelId, Component rendered) {

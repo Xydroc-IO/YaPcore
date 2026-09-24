@@ -1,6 +1,8 @@
 package com.yapcore.chat.cmd;
 
 import com.yapcore.chat.ChatConfig;
+import com.yapcore.chat.ChatChannelUi;
+import com.yapcore.chat.ChatFormat;
 import com.yapcore.chat.ChatPlugin;
 import com.yapcore.chat.service.IgnoreService;
 import com.yapcore.chat.service.PlayerChannelService;
@@ -58,13 +60,16 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
         if (args.length < 1) {
             String current = channels.channel(player, config.defaultChannel());
             msg().sendRaw(player, "&eChannel: &f{channel}", "channel", current);
-            msg().sendRaw(player, "&7Available: &f{channels}", "channels", listChannels(player));
-            msg().sendRaw(player, "&e/ch <channel> &7— switch  ·  &e!<msg> &7— one-shot local");
+            ChatFormat.sendSystem(player, ChatChannelUi.switcher(allowedChannels(player), current));
+            msg().sendRaw(player, "&7Click a channel above · &e/ch <name> &7· &e!<msg> &7one-shot local");
+            player.sendActionBar(ChatChannelUi.actionBar(current));
             return true;
         }
         String ch = args[0].toLowerCase(Locale.ROOT);
         if (!config.channels().containsKey(ch)) {
             msg().send(player, "unknown-channel", "channels", listChannels(player));
+            ChatFormat.sendSystem(player, ChatChannelUi.switcher(allowedChannels(player),
+                    channels.channel(player, config.defaultChannel())));
             return true;
         }
         if (!config.canUseChannel(player, ch)) {
@@ -76,10 +81,12 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
         }
         channels.setChannel(player, ch);
         msg().send(player, "channel-set", "channel", ch);
+        ChatFormat.sendSystem(player, ChatChannelUi.switcher(allowedChannels(player), ch));
+        player.sendActionBar(ChatChannelUi.actionBar(ch));
         return true;
     }
 
-    private String listChannels(Player player) {
+    private List<String> allowedChannels(Player player) {
         List<String> names = new ArrayList<>();
         for (String id : config.channels().keySet()) {
             if (config.canUseChannel(player, id)) {
@@ -87,7 +94,11 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
             }
         }
         names.sort(String::compareTo);
-        return String.join(", ", names);
+        return names;
+    }
+
+    private String listChannels(Player player) {
+        return String.join(", ", allowedChannels(player));
     }
 
     private boolean clearChat(CommandSender sender) {

@@ -65,17 +65,10 @@ public final class ChatListener implements Listener {
         }
 
         String plain = PlainTextComponentSerializer.plainText().serialize(event.message());
-        String channel = channels.channel(source, config.defaultChannel());
-        String messageText = plain;
-
-        if (plain.startsWith(config.localPrefix()) && plain.length() > config.localPrefix().length()) {
-            channel = "local";
-            messageText = plain.substring(config.localPrefix().length()).trim();
-        }
-
-        if (!config.channels().containsKey(channel) && !"local".equals(channel)) {
-            channel = config.defaultChannel();
-        }
+        String stored = channels.channel(source, config.defaultChannel());
+        ChatRelayOps.Speak speak = ChatRelayOps.resolveSpeak(config, stored, plain);
+        String channel = speak.channel();
+        String messageText = speak.message();
 
         if (!config.canUseChannel(source, channel)) {
             event.setCancelled(true);
