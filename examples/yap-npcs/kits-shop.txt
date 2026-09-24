@@ -1,0 +1,19 @@
+# Kits NPC shop — opens the shared /kits GUI (tier gear + rank kits).
+# Requires yap-npcs + yap-playerdata (features.kits) + yap-essentials on this server.
+#
+# Rank kits (vip / mvp / elite) always show; players without the matching
+# yapdata.kit.<id> node can preview but cannot claim the free daily kit or
+# pay extra-cost for another while on cooldown.
+#
+# After placing: copy kits.yml to this backend (or fleet catalog sync).
+
+/npc create kits_shop Kits Shop
+/npc setplayer kits_shop kits
+/npc setdialogue kits_shop &eKits Shop&7 — gear tiers, enchanted sets, and rank kits. Locked ranks show but stay locked until you rank up.
+/npc respawn
+
+# Optional: place at hub coords
+# /npc create kits_shop at world 8 64 0 90 Kits Shop
+# /npc setplayer kits_shop kits
+# /npc setdialogue kits_shop &eKits Shop&7 — gear tiers, enchanted sets, and rank kits.
+# /npc respawn

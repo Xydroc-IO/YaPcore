@@ -13,6 +13,23 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.2 — hub spawn, wild RTP, portal ghosts (2026-09-24)
+
+Same ship version. No version bump. Rebuild packs + clients + `publishReleasesFolder -PyapGameplay=true` → stage `UPLOAD/`.
+
+| Area | Change |
+|------|--------|
+| **YaPEssentials** | Lobby `teleport-on-join` hub land at `/setspawn`; RTP min **1600** (100 chunks) / max **16000**, center on Essentials spawn, async gen for far wilderness. |
+| **YaPPortals** | Orphan disc purge (`/portal purge` + empty-server sweep); local wild pad waits for RTP success; End-door / arrival harden. |
+| **YaPPlayerData** | Sync join catches `Throwable` so classloader failures kick instead of freeze; profile recovery lobby→global. |
+| **Fleet** | Inventory-profile stamping (lobby global); kit/catalog sync. |
+| **Client** | ultrawide **1.0.17**, presence **1.0.19**, visuals **1.0.28** — held-item attach; Iris/Sodium world kick; Panini polish. |
+| **Domain ≤500** | Split oversize first-party classes so `checkDomainLineLimits` stays green. |
+
+Upload: `gh release upload 0.0.0.2 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore`.
+
+---
+
 ## v0.0.0.2 — portals, ultrawide Panini, createWorld (2026-09-23)
 
 Product bump from **0.0.0.1**. All first-party jars / `plugin.yml` / Link plugins share **0.0.0.2**. Client mods: ultrawide **1.0.13**, visuals **1.0.18**, presence **1.0.12**. Rebuild packs + clients + `publishReleasesFolder -PyapGameplay=true` → stage `UPLOAD/`. Create GitHub prerelease tag **`0.0.0.2`**.

@@ -92,7 +92,7 @@ Needs `economy.enabled: true` in YaPPlayerData.
 ### Kits
 
 ```text
-/kits                 # GUI with cooldowns
+/kits                 # GUI with cooldowns (shows locked rank kits too)
 /kit starter
 /createkit vip 3600   # staff — save inv+armor, 1h delay
 /delkit vip
@@ -101,7 +101,13 @@ kit grant Steve vip   # console/queue across fleet
 kit give Steve vip    # this backend only, online
 ```
 
-Copy the same `plugins/YaPPlayerData/kits.yml` to every backend that should share kits.
+Premade defs in `kits.yml`: starter, adventurer, wood→netherite gear, enchanted_iron/diamond/netherite, and rank kits vip/mvp/elite.
+
+- Rank kits: **1 free / 6h** (`delay-seconds: 21600`); `extra-cost` buys another while on cooldown — both need `yapdata.kit.<id>`.
+- Cash gear kits (wood→netherite + enchanted_*): pay `cost` anytime (no delay).
+- Kits NPC: `/npc setplayer kits_shop kits` — see `examples/yap-npcs/kits-shop.txt`.
+
+After updating the jar, `/yapdata reload` (or restart) merges premade kits from the jar even if an old `kits.yml` only had starter/adventurer/vip.
 
 ### Bag & shops
 

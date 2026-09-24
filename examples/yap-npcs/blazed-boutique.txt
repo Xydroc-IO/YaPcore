@@ -1,0 +1,21 @@
+# Blazed Boutique NPC — themed like the other shopkeepers
+# Requires yap-npcs + yap-420 on this server.
+#
+# Skin: user-supplied mannequin (resourcepacks/yap-npc-skins/bob-marley-user.png).
+# Paper only accepts textures.minecraft.net for mannequin skins — MineSkin upload of that PNG.
+# Local copy also served at http://HOST:8081/skin/npc-blazed-boutique.png (not usable as /npc setskin).
+#
+# Display name may include spaces (hologram). Profile id stays blazed_boutique.
+
+/npc create blazed_boutique Blazed Boutique
+/npc setplayer blazed_boutique yap420 sell
+/npc setdialogue blazed_boutique &aEasy mon… &7Welcome to the &2Blazed Boutique&7. Grow it, cure it, pack it — then sell it here.
+/npc setskin blazed_boutique https://textures.minecraft.net/texture/87486fde6315b3fe743a70172912abcba5e868e995b53f61ef2e4714f7d93e0f
+/npc setskinslim blazed_boutique false
+/npc respawn
+
+# If the NPC already exists (re-apply after swapping the PNG / re-uploading to MineSkin):
+# /npc setname blazed_boutique Blazed Boutique
+# /npc setdialogue blazed_boutique &aEasy mon… &7Welcome to the &2Blazed Boutique&7. Grow it, cure it, pack it — then sell it here.
+# /npc setskin blazed_boutique https://textures.minecraft.net/texture/<new-hash>
+# /npc respawn

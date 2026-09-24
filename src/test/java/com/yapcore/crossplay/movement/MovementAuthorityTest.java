@@ -53,4 +53,10 @@ final class MovementAuthorityTest {
     void bukkitWalkSpeedIsAttributeTimesTwo() {
         assertEquals(0.2f, table.bukkitWalkSpeed(), 1e-6f);
     }
+
+    @Test
+    void bukkitFlySpeedIsAbilitiesTimesTwo() {
+        // Catalog 0.05 → Bukkit 0.1 (CraftPlayer divides by 2 into abilities).
+        assertEquals(0.1f, table.bukkitFlySpeed(), 1e-6f);
+    }
 }

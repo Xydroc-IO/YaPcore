@@ -10,6 +10,8 @@ growth:
   min-light: 9
   require-water-nearby: true
   water-radius: 4
+  # Keep tilled farmland from fading/trampling to dirt (plants sit on air above soil)
+  protect-farmland: true
   soils:
     - FARMLAND
   herbalism-xp: 12.0

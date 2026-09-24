@@ -171,6 +171,7 @@ public final class DashboardKitItems {
         kit.put("delaySeconds", longVal(first(raw, "delay-seconds", "delay"), 86400));
         kit.put("maxUses", intVal(first(raw, "max-uses", "maxuses"), 0));
         kit.put("cost", doubleVal(raw.get("cost"), 0));
+        kit.put("extraCost", doubleVal(first(raw, "extra-cost", "paid-cost"), 0));
         kit.put("firstJoin", boolVal(first(raw, "first-join", "kit-on-join"), false));
         kit.put("commands", stringList(raw.get("commands")));
         List<Map<String, Object>> items = new ArrayList<>();
@@ -206,6 +207,7 @@ public final class DashboardKitItems {
         out.put("delay-seconds", longVal(kit.get("delaySeconds"), 86400));
         out.put("max-uses", intVal(kit.get("maxUses"), 0));
         out.put("cost", doubleVal(kit.get("cost"), 0));
+        out.put("extra-cost", doubleVal(kit.get("extraCost"), 0));
         out.put("first-join", boolVal(kit.get("firstJoin"), false));
         out.put("commands", stringList(kit.get("commands")));
         List<Map<String, Object>> rows = new ArrayList<>();

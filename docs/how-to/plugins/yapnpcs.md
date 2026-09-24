@@ -51,7 +51,30 @@ Or create at coords:
 | `/npc setskin <id> <url\|clear>` | Skin | |
 | `/npc setskinslim <id> true\|false` | Slim arms | |
 
-**Blazed Boutique (YaP420):** use `player:yap420 sell` — do not rebuild the cannabis market with `/npc shop`.
+**Blazed Boutique (YaP420):** use `player:yap420 sell` — do not rebuild the cannabis market with `/npc shop`. Theme example (Bob Marley–style herbalist skin + nametag): [`examples/yap-npcs/blazed-boutique.txt`](../../../examples/yap-npcs/blazed-boutique.txt).
+
+# Kits Shop:** opens the shared kits GUI (tier armor/weapon sets + rank kits). Locked rank kits still appear; claim/buy needs the matching rank. Example: [`examples/yap-npcs/kits-shop.txt`](../../../examples/yap-npcs/kits-shop.txt).
+
+```text
+/npc create kits_shop Kits Shop
+/npc setplayer kits_shop kits
+```
+
+**Auction House:** opens `/ah` with browse (buy), sell (price picker), and my-listings (cancel). Example: [`examples/yap-npcs/auction-house.txt`](../../../examples/yap-npcs/auction-house.txt).
+
+```text
+/npc create auction_house Auction House
+/npc setplayer auction_house ah
+```
+
+**Mail:** opens `/mail` desk — inbox (read / reply), send (online pick or type name), clear, refresh. Example: [`examples/yap-npcs/mail-clerk.txt`](../../../examples/yap-npcs/mail-clerk.txt).
+
+```text
+/npc create mail_clerk Mail
+/npc setplayer mail_clerk mail
+```
+
+Feature GUIs (kits / AH / mail / …) use **Close** only — they never open YaP Menu. Use `/menu` for the hub.
 
 ## NPC shops (vanilla materials)
 

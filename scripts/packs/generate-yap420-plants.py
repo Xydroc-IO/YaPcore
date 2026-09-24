@@ -1,458 +1,377 @@
 #!/usr/bin/env python3
-"""Generate original YaP420 cannabis crop textures (Minecraft pixel art).
+"""Build YaP420 plant/item textures from Blazin 3.1 ("Get Cobblestoned!").
 
-Target look: CannabisCraft-style ladder of opposite palmate fans on a thin
-stem, with tan buds at each node — YaP-authored, not their files.
+Blazin replaces nether-wart crops with real cannabis plant sheets. We split those
+dual 256×256 crop panels into single-plant squares, map them onto YaP420 stages,
+color-shift indica, and remap a few thematic item icons.
 
-64×32 sheets read crisply under Faithful 64x.
+Source: resourcepacks/THIRD_PARTY/blazin/  (see blazin-NOTICE.txt)
+Output: resourcepacks/yap-items/assets/yapitems/textures/{block,item}/
 """
 from __future__ import annotations
 
-import math
+import json
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageOps
 
 ROOT = Path(__file__).resolve().parents[2]
+BLAZIN = ROOT / "resourcepacks/THIRD_PARTY/blazin/textures"
 BLOCK = ROOT / "resourcepacks/yap-items/assets/yapitems/textures/block"
 ITEM = ROOT / "resourcepacks/yap-items/assets/yapitems/textures/item"
-W = 64
-H = 64
+MODELS = ROOT / "resourcepacks/yap-items/assets/yapitems/models/item"
+SIZE = 128  # crisp under Faithful 64x; Blazin source is 256 dual
 
 
-def C(h: str, a: int = 255) -> tuple[int, int, int, int]:
-    h = h.lstrip("#")
-    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), a)
+def load(path: Path) -> Image.Image:
+    return Image.open(path).convert("RGBA")
 
 
-# Match reference screenshot: lime-yellow tips, mid green, gold node buds
-SATIVA = {
-    "stem": C("#78b048"),
-    "stem_d": C("#508030"),
-    "leaf_d": C("#2e7018"),
-    "leaf": C("#58b030"),
-    "leaf_l": C("#c8f050"),
-    "vein": C("#1c5010"),
-    "bud_d": C("#9a7820"),
-    "bud": C("#e0b838"),
-    "bud_l": C("#f8e878"),
-    "pistil": C("#f09028"),
-}
-INDICA = {
-    "stem": C("#589048"),
-    "stem_d": C("#386838"),
-    "leaf_d": C("#246030"),
-    "leaf": C("#3c9040"),
-    "leaf_l": C("#98d850"),
-    "vein": C("#184028"),
-    "bud_d": C("#806020"),
-    "bud": C("#c89830"),
-    "bud_l": C("#e8d068"),
-    "pistil": C("#e07820"),
-}
+def half(im: Image.Image, which: str = "left") -> Image.Image:
+    """Blazin crop sheets are two plants side-by-side (classic dual-cross)."""
+    w, h = im.size
+    if which == "left":
+        return im.crop((0, 0, w // 2, h))
+    return im.crop((w // 2, 0, w, h))
 
 
-def blank() -> Image.Image:
-    return Image.new("RGBA", (W, H), (0, 0, 0, 0))
+def square_from_bottom(tall: Image.Image, size: int = SIZE) -> Image.Image:
+    """Bottom-align a tall plant into a square crop sheet."""
+    tall = tall.convert("RGBA")
+    tw, th = tall.size
+    # Scale width to size, keep aspect
+    scale = size / tw
+    nh = max(1, int(round(th * scale)))
+    scaled = tall.resize((size, nh), Image.Resampling.LANCZOS)
+    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    y = size - min(size, nh)
+    src = scaled if nh <= size else scaled.crop((0, nh - size, size, nh))
+    out.paste(src, (0, y if nh <= size else 0), src)
+    return out
 
 
-def put(img: Image.Image, x: int, y: int, c: tuple[int, int, int, int]) -> None:
-    if 0 <= x < W and 0 <= y < H and c[3]:
-        img.putpixel((x, y), c)
+def band(tall: Image.Image, y0_frac: float, y1_frac: float, size: int = SIZE) -> Image.Image:
+    """Horizontal band of a tall sheet → square (for stacked tall crops)."""
+    tw, th = tall.size
+    y0 = int(th * y0_frac)
+    y1 = int(th * y1_frac)
+    strip = tall.crop((0, y0, tw, y1))
+    return strip.resize((size, size), Image.Resampling.LANCZOS)
 
 
-def stem(img: Image.Image, x: int, y0: int, y1: int, pal: dict) -> None:
-    for y in range(min(y0, y1), max(y0, y1) + 1):
-        put(img, x - 1, y, pal["stem_d"])
-        put(img, x, y, pal["stem"])
-        put(img, x + 1, y, pal["stem_d"] if y % 2 else pal["stem"])
+def indica_shift(im: Image.Image) -> Image.Image:
+    """Darker, cooler green for indica vs Blazin's lime sativa look."""
+    im = im.convert("RGBA")
+    r, g, b, a = im.split()
+    # pull red down slightly, boost blue in greens
+    r = r.point(lambda v: int(v * 0.78))
+    g = g.point(lambda v: int(v * 0.88))
+    b = b.point(lambda v: min(255, int(v * 1.15 + 8)))
+    out = Image.merge("RGBA", (r, g, b, a))
+    return ImageEnhance.Brightness(out).enhance(0.92)
 
 
-def leaflet(
-    img: Image.Image,
-    ox: float,
-    oy: float,
-    ang_deg: float,
-    length: float,
-    half_w: float,
-    pal: dict,
-) -> None:
-    ang = math.radians(ang_deg)
-    dx, dy = math.sin(ang), -math.cos(ang)
-    px, py = math.cos(ang), math.sin(ang)
-    n = max(5, int(round(length)))
-    for i in range(n + 1):
-        t = i / n
-        if t < 0.12:
-            env = (t / 0.12) * 0.5
-        elif t < 0.38:
-            env = 0.5 + (t - 0.12) / 0.26 * 0.5
-        else:
-            env = math.cos(((t - 0.38) / 0.62) * (math.pi / 2))
-        jag = 0.58 + 0.42 * abs(math.sin(t * math.pi * 6))
-        w = max(0.4, half_w * env * jag)
-        cx, cy = ox + dx * i, oy + dy * i
-        for s in range(-int(w) - 1, int(w) + 2):
-            if abs(s) > w + 0.3:
-                continue
-            x, y = round(cx + px * s), round(cy + py * s)
-            if abs(s) >= w - 0.5:
-                put(img, x, y, pal["leaf_d"])
-            elif abs(s) <= 0.55:
-                put(img, x, y, pal["vein"])
-            elif t > 0.62:
-                put(img, x, y, pal["leaf_l"])
-            else:
-                put(img, x, y, pal["leaf"])
-
-
-def fan_out(
-    img: Image.Image,
-    cx: int,
-    cy: int,
-    *,
-    side: int,
-    scale: float,
-    pal: dict,
-    fingers: int = 7,
-) -> None:
-    """One cannabis fan — up-and-out like the reference (~55° from vertical)."""
-    fingers = max(3, fingers | 1)
-    half = fingers // 2
-    # 0° = straight up; ±55° = outward tiers in the screenshot
-    base = 55.0 * side
-    span = 48.0
-    base_len = 22.0 * scale
-    base_w = 2.4 * scale
-    for i in range(-half, half + 1):
-        ang = base + i * (span / max(half, 1))
-        length = base_len * (1.0 - 0.13 * abs(i))
-        half_w = base_w * (1.0 - 0.09 * abs(i))
-        leaflet(img, cx, cy, ang, length, half_w, pal)
-
-
-def bud(img: Image.Image, cx: int, cy: int, r: int, pal: dict, rich: bool) -> None:
-    """Tan/gold node bud like the reference."""
-    for y in range(cy - r - 1, cy + r + 2):
-        for x in range(cx - r - 1, cx + r + 2):
-            dx, dy = x - cx, y - cy
-            if dx * dx + dy * dy * 0.8 > (r + 0.55) ** 2:
-                continue
-            if abs(dx) + abs(dy) >= r:
-                put(img, x, y, pal["bud_d"])
-            elif dy < 0:
-                put(img, x, y, pal["bud_l"])
-            else:
-                put(img, x, y, pal["bud"])
-    if rich:
-        put(img, cx, cy - r - 1, pal["pistil"])
-        put(img, cx - 1, cy - r, pal["pistil"])
-        put(img, cx + 1, cy - r, pal["pistil"])
-
-
-def tier(
-    img: Image.Image,
-    cx: int,
-    cy: int,
-    pal: dict,
-    *,
-    scale: float = 1.0,
-    fingers: int = 7,
-    with_bud: bool = True,
-    rich: bool = False,
-    bud_r: int = 2,
-) -> None:
-    """Opposite leaf pair + optional node bud — the CannabisCraft unit."""
-    fan_out(img, cx - 1, cy, side=-1, scale=scale, pal=pal, fingers=fingers)
-    fan_out(img, cx + 1, cy, side=+1, scale=scale, pal=pal, fingers=fingers)
-    if with_bud:
-        bud(img, cx, cy, bud_r, pal, rich)
-
-
-def paint_ladder(
-    tiers: list[tuple[int, float, int, bool, bool, int]],
-    pal: dict,
-    *,
-    stem_top: int,
-    stem_bot: int = H - 1,
-) -> Image.Image:
-    """tiers: (y, scale, fingers, with_bud, rich, bud_r)"""
-    img = blank()
-    cx = W // 2
-    stem(img, cx, stem_top, stem_bot, pal)
-    for y, sc, fingers, with_bud, rich, br in tiers:
-        tier(img, cx, y, pal, scale=sc, fingers=fingers, with_bud=with_bud, rich=rich, bud_r=br)
-    return img
-
-
-def stage0(pal: dict) -> Image.Image:
-    img = blank()
-    cx = W // 2
-    stem(img, cx, 52, 63, pal)
-    put(img, cx - 2, 50, pal["leaf"])
-    put(img, cx + 2, 50, pal["leaf"])
-    put(img, cx, 48, pal["leaf_l"])
-    put(img, cx - 3, 51, pal["leaf_d"])
-    put(img, cx + 3, 51, pal["leaf_d"])
-    return img
-
-
-def stage1(pal: dict, sativa: bool) -> Image.Image:
-    # Young ~ like right plant: 2 tiers
-    sc = 0.7 if sativa else 0.85
-    return paint_ladder(
-        [
-            (56, sc * 0.75, 5, False, False, 1),
-            (44, sc, 5, True, False, 1),
-        ],
-        pal,
-        stem_top=40,
-    )
-
-
-def stage2(pal: dict, sativa: bool) -> Image.Image:
-    sc = 0.8 if sativa else 0.95
-    return paint_ladder(
-        [
-            (58, sc * 0.7, 5, False, False, 1),
-            (46, sc * 0.9, 7, True, False, 1),
-            (32, sc, 7, True, False, 2),
-        ],
-        pal,
-        stem_top=26,
-    )
-
-
-def stage3(pal: dict, sativa: bool) -> Image.Image:
-    # Full single block — ~4–5 clear tiers
-    sc = 0.85 if sativa else 1.0
-    return paint_ladder(
-        [
-            (60, sc * 0.7, 5, True, False, 1),
-            (48, sc * 0.85, 7, True, False, 2),
-            (36, sc * 0.95, 7, True, False, 2),
-            (24, sc, 7, True, True, 2),
-            (12, sc * 0.9, 5, True, True, 2),
-        ],
-        pal,
-        stem_top=6,
-    )
-
-
-def tall_bottom(stage: int, pal: dict, sativa: bool) -> Image.Image:
-    sc = 0.9 if sativa else 1.05
-    rich = stage >= 5
-    return paint_ladder(
-        [
-            (60, sc * 0.85, 7, True, rich, 2),
-            (48, sc * 0.95, 7, True, rich, 2),
-            (36, sc, 7, True, rich, 2),
-            (24, sc, 7, True, rich, 2),
-            (12, sc * 0.95, 7, True, rich, 2),
-            (4, sc * 0.85, 5, True, rich, 2),
-        ],
-        pal,
-        stem_top=0,
-    )
-
-
-def tall_mid(pal: dict) -> Image.Image:
-    sc = 0.95
-    return paint_ladder(
-        [
-            (60, sc * 0.9, 7, True, True, 2),
-            (48, sc, 7, True, True, 2),
-            (36, sc, 7, True, True, 2),
-            (24, sc * 0.95, 7, True, True, 2),
-            (12, sc * 0.9, 7, True, True, 2),
-            (4, sc * 0.8, 5, True, True, 2),
-        ],
-        pal,
-        stem_top=0,
-    )
-
-
-def tall_top(stage: int, pal: dict, sativa: bool) -> Image.Image:
-    sc = 0.9 if sativa else 1.05
-    rich = stage >= 5
-    img = paint_ladder(
-        [
-            (56, sc * 0.95, 7, True, rich, 2),
-            (42, sc, 7, True, rich, 2),
-            (28, sc, 7, True, rich, 2),
-            (16, sc * 0.9, 5, True, rich, 2),
-        ],
-        pal,
-        stem_top=8,
-        stem_bot=63,
-    )
-    # Apical cola — denser bud cluster at tip
-    cx = W // 2
-    bud(img, cx, 8, 3 if rich else 2, pal, rich)
-    if rich:
-        bud(img, cx - 4, 14, 2, pal, True)
-        bud(img, cx + 4, 14, 2, pal, True)
-        bud(img, cx, 3, 2, pal, True)
-    return img
-
-
-def save(img: Image.Image, path: Path) -> None:
+def save(im: Image.Image, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    img.save(path)
+    im.save(path)
     print("wrote", path.relative_to(ROOT))
 
 
+DISPLAY = {
+    "gui": {"rotation": [30, 45, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.35, 0.35, 0.35]},
+    "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]},
+    "thirdperson_righthand": {
+        "rotation": [0, 45, 0],
+        "translation": [0, 2.5, 0],
+        "scale": [0.3, 0.3, 0.3],
+    },
+    "firstperson_righthand": {
+        "rotation": [0, 45, 0],
+        "translation": [0, 1.5, 0],
+        "scale": [0.35, 0.35, 0.35],
+    },
+}
+
+
+def _plane(y0: float, y1: float, tex: str, origin_y: float) -> list:
+    face = {"uv": [0, 0, 16, 16], "texture": tex}
+    rot = {"origin": [8, origin_y, 8], "axis": "y", "angle": 45, "rescale": True}
+    return [
+        {
+            "from": [0.8, y0, 8],
+            "to": [15.2, y1, 8],
+            "rotation": rot,
+            "shade": False,
+            "faces": {"north": face, "south": face},
+        },
+        {
+            "from": [8, y0, 0.8],
+            "to": [8, y1, 15.2],
+            "rotation": rot,
+            "shade": False,
+            "faces": {"west": face, "east": face},
+        },
+    ]
+
+
 def write_models() -> None:
-    """4-plane bush models (0°+45°) so tiers read fuller in-world."""
-    import json
-
-    models = ROOT / "resourcepacks/yap-items/assets/yapitems/models/item"
-    display = {
-        "gui": {"rotation": [30, 45, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
-        "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.35, 0.35, 0.35]},
-        "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]},
-        "thirdperson_righthand": {
-            "rotation": [0, 45, 0],
-            "translation": [0, 2.5, 0],
-            "scale": [0.3, 0.3, 0.3],
-        },
-        "firstperson_righthand": {
-            "rotation": [0, 45, 0],
-            "translation": [0, 1.5, 0],
-            "scale": [0.35, 0.35, 0.35],
-        },
-    }
-
-    def face(tex: str) -> dict:
-        return {"uv": [0, 0, 16, 16], "texture": tex}
-
-    def plane_pair(y0: float, y1: float, tex: str, angle: float, origin_y: float) -> list:
-        return [
-            {
-                "from": [0.8, y0, 8],
-                "to": [15.2, y1, 8],
-                "rotation": {
-                    "origin": [8, origin_y, 8],
-                    "axis": "y",
-                    "angle": angle,
-                    "rescale": True,
-                },
-                "shade": False,
-                "faces": {"north": face(tex), "south": face(tex)},
-            },
-            {
-                "from": [8, y0, 0.8],
-                "to": [8, y1, 15.2],
-                "rotation": {
-                    "origin": [8, origin_y, 8],
-                    "axis": "y",
-                    "angle": angle,
-                    "rescale": True,
-                },
-                "shade": False,
-                "faces": {"west": face(tex), "east": face(tex)},
-            },
-        ]
-
-    def single(tex: str) -> dict:
-        els: list = []
-        for angle in (45, 0):
-            els += plane_pair(0, 16, "#cross", angle, 8)
-        return {
-            "ambientocclusion": False,
-            "textures": {"particle": tex, "cross": tex},
-            "elements": els,
-            "display": display,
-        }
-
-    def tall2(bottom: str, top: str) -> dict:
-        els: list = []
-        for angle in (45, 0):
-            els += plane_pair(-16, 0, "#cross", angle, -8)
-            els += plane_pair(0, 16, "#top", angle, 8)
-        d = dict(display)
-        d["fixed"] = {"rotation": [0, 0, 0], "translation": [0, 16, 0], "scale": [1, 1, 1]}
-        return {
-            "ambientocclusion": False,
-            "textures": {"particle": bottom, "cross": bottom, "top": top},
-            "elements": els,
-            "display": d,
-        }
-
-    def tall3(bottom: str, mid: str, top: str) -> dict:
-        els: list = []
-        for angle in (45, 0):
-            els += plane_pair(-16, 0, "#cross", angle, -8)
-            els += plane_pair(0, 16, "#mid", angle, 8)
-            els += plane_pair(16, 32, "#top", angle, 24)
-        d = dict(display)
-        d["fixed"] = {"rotation": [0, 0, 0], "translation": [0, 16, 0], "scale": [1, 1, 1]}
-        return {
-            "ambientocclusion": False,
-            "textures": {"particle": bottom, "cross": bottom, "mid": mid, "top": top},
-            "elements": els,
-            "display": d,
-        }
-
-    models.mkdir(parents=True, exist_ok=True)
+    MODELS.mkdir(parents=True, exist_ok=True)
     for strain, prefix in (("sativa", "yap420_plant"), ("indica", "yap420_plant_indica")):
-        tex = "sativa" if strain == "sativa" else "indica"
         for stage in range(4):
-            data = single(f"yapitems:block/yap420_{tex}_{stage}")
-            path = models / f"{prefix}_{stage}.json"
-            path.write_text(json.dumps(data, indent=2) + "\n")
-            print("wrote", path.relative_to(ROOT))
-        path = models / f"{prefix}_4.json"
-        path.write_text(
+            path = f"yapitems:block/yap420_{strain}_{stage}"
+            data = {
+                "parent": "minecraft:block/cross",
+                "textures": {"cross": path, "particle": path},
+                "display": DISPLAY,
+            }
+            (MODELS / f"{prefix}_{stage}.json").write_text(json.dumps(data, indent=2) + "\n")
+
+        def tall2(bottom: str, top: str) -> dict:
+            d = dict(DISPLAY)
+            d["fixed"] = {"rotation": [0, 0, 0], "translation": [0, 16, 0], "scale": [1, 1, 1]}
+            return {
+                "ambientocclusion": False,
+                "textures": {"particle": bottom, "cross": bottom, "top": top},
+                "elements": _plane(-16, 0, "#cross", -8) + _plane(0, 16, "#top", 8),
+                "display": d,
+            }
+
+        def tall3(bottom: str, mid: str, top: str) -> dict:
+            d = dict(DISPLAY)
+            d["fixed"] = {"rotation": [0, 0, 0], "translation": [0, 16, 0], "scale": [1, 1, 1]}
+            return {
+                "ambientocclusion": False,
+                "textures": {"particle": bottom, "cross": bottom, "mid": mid, "top": top},
+                "elements": (
+                    _plane(-16, 0, "#cross", -8)
+                    + _plane(0, 16, "#mid", 8)
+                    + _plane(16, 32, "#top", 24)
+                ),
+                "display": d,
+            }
+
+        (MODELS / f"{prefix}_4.json").write_text(
             json.dumps(
-                tall2(f"yapitems:block/yap420_{tex}_4", f"yapitems:block/yap420_{tex}_4_top"),
+                tall2(f"yapitems:block/yap420_{strain}_4", f"yapitems:block/yap420_{strain}_4_top"),
                 indent=2,
             )
             + "\n"
         )
-        print("wrote", path.relative_to(ROOT))
         if strain == "sativa":
             data = tall3(
-                f"yapitems:block/yap420_{tex}_5",
-                f"yapitems:block/yap420_{tex}_5_mid",
-                f"yapitems:block/yap420_{tex}_5_top",
+                f"yapitems:block/yap420_{strain}_5",
+                f"yapitems:block/yap420_{strain}_5_mid",
+                f"yapitems:block/yap420_{strain}_5_top",
             )
         else:
-            data = tall2(f"yapitems:block/yap420_{tex}_5", f"yapitems:block/yap420_{tex}_5_top")
-        path = models / f"{prefix}_5.json"
-        path.write_text(json.dumps(data, indent=2) + "\n")
-        print("wrote", path.relative_to(ROOT))
+            data = tall2(
+                f"yapitems:block/yap420_{strain}_5",
+                f"yapitems:block/yap420_{strain}_5_top",
+            )
+        (MODELS / f"{prefix}_5.json").write_text(json.dumps(data, indent=2) + "\n")
+        print("wrote models for", prefix)
+
+
+def plant_set(seedling: Image.Image, veg: Image.Image, flower: Image.Image, *, indica: bool) -> dict[str, Image.Image]:
+    """Build all block sheets for one strain from Blazin halves."""
+    if indica:
+        seedling, veg, flower = map(indica_shift, (seedling, veg, flower))
+
+    # Single-block stages
+    s0 = square_from_bottom(seedling)
+    # stage 1: slightly taller crop of seedling / young veg bottom
+    s1 = square_from_bottom(veg.crop((0, veg.size[1] // 2, veg.size[0], veg.size[1])))
+    s2 = square_from_bottom(veg)
+    s3 = square_from_bottom(flower.crop((0, flower.size[1] // 3, flower.size[0], flower.size[1])))
+
+    # Tall: vegetative lower canopy + flowering cola top
+    # stage 4 (2-high): veg lower + flower upper
+    b4 = band(veg, 0.35, 1.0)  # lower-mid veg
+    t4 = band(flower, 0.0, 0.55)  # cola top
+
+    # stage 5: fuller flower stack
+    b5 = band(flower, 0.55, 1.0)  # lower cola / sugar leaves
+    m5 = band(flower, 0.28, 0.72)
+    t5 = band(flower, 0.0, 0.45)
+
+    return {
+        "0": s0,
+        "1": s1,
+        "2": s2,
+        "3": s3,
+        "4": b4,
+        "4_top": t4,
+        "5": b5,
+        "5_mid": m5,
+        "5_top": t5,
+    }
+
+
+def draw_bud_icon(size: int = 16, *, wet: bool = True) -> Image.Image:
+    """Original YaP cannabis cola — organic bud, not a bottle/potion silhouette."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    if wet:
+        leaf = (52, 140, 48, 255)
+        leaf_l = (98, 190, 72, 255)
+        leaf_d = (28, 88, 32, 255)
+        tip = (210, 230, 90, 255)
+        dew = (180, 220, 255, 200)
+    else:
+        leaf = (72, 118, 42, 255)
+        leaf_l = (130, 160, 70, 255)
+        leaf_d = (48, 72, 28, 255)
+        tip = (196, 150, 55, 255)
+        dew = (0, 0, 0, 0)
+
+    cx = size // 2
+    # Cone cola: wide base, taper to tip
+    for y in range(size):
+        t = y / max(1, size - 1)
+        half_w = max(1.0, (1.0 - t * 0.72) * (size * 0.38))
+        for x in range(size):
+            dx = x - cx + 0.5
+            if abs(dx) > half_w:
+                continue
+            edge = abs(dx) / half_w
+            # jagged bract edges
+            jagged = 0.15 * ((x * 3 + y * 5) % 3)
+            if edge > 0.92 - jagged * 0.1 and (x + y) % 2 == 0:
+                continue
+            if edge > 0.78:
+                c = leaf_d
+            elif (x + y * 2) % 5 == 0:
+                c = tip  # pistil flecks
+            elif edge < 0.35 and t < 0.55:
+                c = leaf_l
+            else:
+                c = leaf
+            img.putpixel((x, y), c)
+    # stem nub at bottom
+    for x in range(cx - 1, cx + 2):
+        for y in range(size - 2, size):
+            if 0 <= x < size:
+                img.putpixel((x, y), (70, 55, 30, 255) if not wet else (60, 90, 40, 255))
+    # wet dew highlights
+    if wet and dew[3] > 0:
+        for px, py in ((cx - 2, 4), (cx + 1, 7), (cx - 1, 10)):
+            if 0 <= px < size and 0 <= py < size and img.getpixel((px, py))[3] > 0:
+                img.putpixel((px, py), dew)
+    return img
+
+
+def draw_seed_icon(size: int = 16) -> Image.Image:
+    """Original YaP seed — classic oval cannabis seed with tiger stripes."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    shell = (168, 138, 88, 255)
+    shell_l = (210, 185, 130, 255)
+    shell_d = (110, 80, 48, 255)
+    stripe = (62, 42, 28, 255)
+    # Teardrop/oval: slightly taller than wide, pointed tip up
+    cx, cy = size // 2 - 0.5, size // 2 + 0.5
+    for y in range(size):
+        for x in range(size):
+            # parametric oval with soft tip
+            nx = (x - cx) / 4.2
+            ny = (y - cy) / 5.4
+            # slight pear: narrower toward top
+            narrow = 1.0 + 0.22 * max(0.0, -(y - cy) / 5.4)
+            nx *= narrow
+            d = nx * nx + ny * ny
+            if d > 1.0:
+                continue
+            # outline
+            if d > 0.78:
+                c = shell_d
+            # tiger stripes (curved dark bands)
+            elif int((x * 1.4 + y * 0.35) // 2) % 2 == 0 and d < 0.7:
+                c = stripe
+            elif y <= cy - 1 and abs(x - cx) < 2.2:
+                c = shell_l
+            else:
+                c = shell
+            img.putpixel((x, y), c)
+    # hilum (small scar) at bottom
+    hx, hy = size // 2, size - 3
+    for dx in (-1, 0, 1):
+        if 0 <= hx + dx < size and 0 <= hy < size:
+            img.putpixel((hx + dx, hy), shell_d)
+    return img
+
+
+def remap_items() -> None:
+    """Thematic Blazin / GanjaCraft item icons → YaP420 where they fit."""
+    items = BLAZIN / "items"
+    blocks = BLAZIN / "blocks"
+    ganja = ROOT / "resourcepacks/THIRD_PARTY/ganjacraft/textures/items"
+
+    # Seeds = actual seeds (never the leaf icon)
+    seed = draw_seed_icon(16)
+    save(seed, ITEM / "yap420_seed.png")
+
+    # Fiber — GanjaCraft hemp fiber if present, else Blazin leaf
+    fiber_src = ganja / "hempfiber.png"
+    if fiber_src.is_file():
+        save(load(fiber_src).resize((16, 16), Image.Resampling.NEAREST), ITEM / "yap420_fiber.png")
+    else:
+        leaf = load(items / "nether_wart.png")
+        save(leaf.resize((16, 16), Image.Resampling.NEAREST), ITEM / "yap420_fiber.png")
+
+    # Kief → gram bags
+    kief = load(items / "blaze_powder.png")
+    save(kief.resize((16, 16), Image.Resampling.NEAREST), ITEM / "yap420_gram.png")
+
+    # Bud block → pound brick
+    brick = load(blocks / "nether_wart_block.png")
+    save(brick.resize((16, 16), Image.Resampling.NEAREST), ITEM / "yap420_brick.png")
+
+    # Grinder → packaging press (static + frames)
+    grind = load(items / "brewing_stand.png")
+    g16 = grind.resize((16, 16), Image.Resampling.NEAREST)
+    save(g16, ITEM / "yap420_press.png")
+    save(g16, ITEM / "yap420_press-0.png")
+    save(g16, ITEM / "yap420_press-1.png")
+    save(g16, ITEM / "yap420_press-2.png")
+
+    # Smoke bottle was dragon_breath (looks like a potion) — use original bud colas
+    save(draw_bud_icon(16, wet=True), ITEM / "yap420_bud_wet.png")
+    cured = draw_bud_icon(16, wet=False)
+    save(cured, ITEM / "yap420_bud_cured.png")
+    # Ounce bag still from flower tip crop
+    flower = half(load(BLAZIN / "blocks/nether_wart_stage_2.png"), "left")
+    tip = band(flower, 0.05, 0.35, 32)
+    save(tip.resize((16, 16), Image.Resampling.NEAREST), ITEM / "yap420_ounce.png")
+
+    # Joint / blunt / paper / rack / brownie stay YaP-authored (no Blazin equivalent)
 
 
 def main() -> None:
-    write_models()
-    for name, pal, sativa in (("sativa", SATIVA, True), ("indica", INDICA, False)):
-        save(stage0(pal), BLOCK / f"yap420_{name}_0.png")
-        save(stage1(pal, sativa), BLOCK / f"yap420_{name}_1.png")
-        save(stage2(pal, sativa), BLOCK / f"yap420_{name}_2.png")
-        save(stage3(pal, sativa), BLOCK / f"yap420_{name}_3.png")
-        save(tall_bottom(4, pal, sativa), BLOCK / f"yap420_{name}_4.png")
-        save(tall_top(4, pal, sativa), BLOCK / f"yap420_{name}_4_top.png")
-        save(tall_bottom(5, pal, sativa), BLOCK / f"yap420_{name}_5.png")
-        save(tall_top(5, pal, sativa), BLOCK / f"yap420_{name}_5_top.png")
-        if sativa:
-            save(tall_mid(pal), BLOCK / f"yap420_{name}_5_mid.png")
+    stage0 = load(BLAZIN / "blocks/nether_wart_stage_0.png")
+    stage1 = load(BLAZIN / "blocks/nether_wart_stage_1.png")
+    stage2 = load(BLAZIN / "blocks/nether_wart_stage_2.png")
 
+    # Left = sativa, right = indica base (Blazin panels differ slightly)
+    sat = plant_set(half(stage0, "left"), half(stage1, "left"), half(stage2, "left"), indica=False)
+    ind = plant_set(half(stage0, "right"), half(stage1, "right"), half(stage2, "right"), indica=True)
+
+    write_models()
+    for strain, sheets in (("sativa", sat), ("indica", ind)):
+        for key, im in sheets.items():
+            if key == "5_mid" and strain == "indica":
+                continue  # indica has no mid segment
+            save(im, BLOCK / f"yap420_{strain}_{key}.png")
+        # inventory plant icons
         for stage in range(6):
-            src = {
-                0: stage0(pal),
-                1: stage1(pal, sativa),
-                2: stage2(pal, sativa),
-                3: stage3(pal, sativa),
-                4: tall_top(4, pal, sativa),
-                5: tall_top(5, pal, sativa),
-            }[stage]
-            item = (
+            src = sheets["5_top" if stage >= 4 else str(min(stage, 3))]
+            name = (
                 f"yap420_plant_{stage}.png"
-                if name == "sativa"
+                if strain == "sativa"
                 else f"yap420_plant_indica_{stage}.png"
             )
-            save(src, ITEM / item)
+            save(src.resize((32, 32), Image.Resampling.LANCZOS), ITEM / name)
+
+    remap_items()
+    print("Blazin → YaP420 plant/item textures done.")
 
 
 if __name__ == "__main__":

@@ -444,7 +444,7 @@ yapperm user {username} parent set vip
 | Add VIP (keep other groups) | `yapperm user {username} parent add vip` |
 | Remove VIP | `yapperm user {username} parent remove vip` |
 
-VIP starter pack already grants `yapdata.kit.*` (all kits). Run `yapperm applypack` once on first boot.
+VIP / MVP / Elite packs grant `yapdata.kit.vip` / `.mvp` / `.elite` (not `yapdata.kit.*`). Run `yapperm applypack` on first boot or after updating starter-grants.
 
 ## Kit packages (playerdata — not Essentials)
 
@@ -454,8 +454,11 @@ Kits live in **`yap-playerdata`** (`plugins/YaPPlayerData/kits.yml`). Copy the *
 |------|-----------------|
 | Unlock kit permanently | `yapperm user {username} permission set yapdata.kit.adventurer true` |
 | Unlock VIP kit node | `yapperm user {username} permission set yapdata.kit.vip true` |
+| Set MVP / Elite rank | `yapperm user {username} parent set mvp` / `elite` |
 | Queue kit items (offline OK) | `kit grant {username} vip` |
 | Give now (player online on Hub) | `kit give {username} vip` |
+
+Rank kits show in `/kits` for everyone; free daily claim and `extra-cost` repurchase both need the matching `yapdata.kit.<id>` node.
 
 `kit grant` writes to shared SQL (YaPDB); the next backend the player joins that has that kit in `kits.yml` delivers the items.
 

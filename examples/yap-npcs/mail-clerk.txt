@@ -1,0 +1,20 @@
+# Mail Clerk NPC — opens the shared /mail desk GUI.
+# Requires yap-npcs + yap-playerdata (features.mail) + yap-essentials.
+#
+# From the desk players can:
+#   - read inbox (unread auto-marked read on open)
+#   - reply by clicking a message
+#   - send to online players (pick head) or type an offline name
+#   - clear inbox / refresh
+# Message body is typed in chat after picking a recipient (type cancel to abort).
+
+/npc create mail_clerk Mail
+/npc setplayer mail_clerk mail
+/npc setdialogue mail_clerk &eMail&7 — read, reply, send, and clear your inbox.
+/npc respawn
+
+# Optional: place at hub coords
+# /npc create mail_clerk at world 0 64 8 180 Mail
+# /npc setplayer mail_clerk mail
+# /npc setdialogue mail_clerk &eMail&7 — inbox, send, and reply.
+# /npc respawn

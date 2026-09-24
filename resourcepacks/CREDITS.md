@@ -35,12 +35,14 @@ YaP-authored overlays in this tree (skies, water, foliage, etc.) follow YaPcore�
 
 ## YaP420 item art (CMD 12200–12230)
 
-Original YaP pixel art in `yap-items` (`yap420_*.png`), including tall-crop
-bottom / middle / top sheets. Plant block sheets are **64×64** CannabisCraft-style
-ladder tiers (`scripts/packs/generate-yap420-plants.py`) — opposite palmate fans,
-gold buds at nodes, 4-plane bush models. Not CannabisCraft / GanjaCraft assets.
-Sativa is the brighter lime column; indica is darker/bushier. The drying-rack
-icon is a wood frame with hanging strips.
+Plant sheets and several item icons are processed from **Blazin / Cannabis
+Resource Pack 3.1** (“Get Cobblestoned!”) — see `THIRD_PARTY/blazin-NOTICE.txt`.
+`scripts/packs/generate-yap420-plants.py` splits the dual nether-wart crop panels
+into YaP420 stage / tall-crop sheets and remaps kief → gram, bud-block → pound,
+grinder → press. Seeds are YaP-authored mottled ovals (not the Blazin leaf).
+Fiber prefers GanjaCraft hempfiber. Indica is a color-shifted Blazin panel.
+Vanilla `block/cross` / stacked-cross models. Drying-rack / paper / brownie /
+blunt remain YaP-authored.
 
 ## YaP Skies + Water + Foliage + Portals
 

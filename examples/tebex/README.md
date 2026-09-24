@@ -63,7 +63,7 @@ kit grant {username} adventurer
 yapperm user {username} permission set yapdata.kit.vip true
 ```
 
-(VIP rank already includes `yapdata.kit.*` after `yapperm applypack`.)
+(VIP rank grants `yapdata.kit.vip` after `yapperm applypack`. MVP/Elite grant their own kit nodes.)
 
 ## Kits file
 

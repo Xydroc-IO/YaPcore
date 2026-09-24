@@ -442,7 +442,22 @@ public final class InstanceLayout {
         for (String folder : pluginFolders) {
             Path cfg = dir.resolve("plugins").resolve(folder).resolve("config.yml");
             patchServerIdInYaml(cfg, serverId);
+            if ("YaPPlayerData".equals(folder) || "yap-playerdata".equals(folder)) {
+                patchInventoryProfileInYaml(cfg, defaultInventoryProfile(serverId));
+            }
         }
+    }
+
+    /**
+     * Lobby / survival / factions share {@code global}. Creative (and other minigame ids)
+     * keep a private profile keyed by {@code server-id}.
+     */
+    static String defaultInventoryProfile(String serverId) {
+        String id = serverId == null ? "" : serverId.trim().toLowerCase(Locale.ROOT);
+        if ("creative".equals(id) || id.endsWith("-creative") || id.startsWith("creative-")) {
+            return "server";
+        }
+        return "global";
     }
 
     static void patchServerIdInYaml(Path cfg, String serverId) throws IOException {
@@ -454,6 +469,19 @@ public final class InstanceLayout {
             text = text.replaceAll("(?m)^(\\s*server-id:\\s*).*$", "$1" + serverId);
         } else {
             text = text + "\nserver-id: " + serverId + "\n";
+        }
+        Files.writeString(cfg, text);
+    }
+
+    static void patchInventoryProfileInYaml(Path cfg, String profile) throws IOException {
+        if (!Files.isRegularFile(cfg) || profile == null || profile.isBlank()) {
+            return;
+        }
+        String text = Files.readString(cfg);
+        if (text.contains("inventory-profile:")) {
+            text = text.replaceAll("(?m)^(\\s*inventory-profile:\\s*).*$", "$1" + profile);
+        } else {
+            text = text + "\ninventory-profile: " + profile + "\n";
         }
         Files.writeString(cfg, text);
     }

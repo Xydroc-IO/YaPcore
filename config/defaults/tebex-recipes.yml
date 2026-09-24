@@ -7,6 +7,14 @@ recipes:
     commands: |
       yapperm user {username} parent set vip
       kit grant {username} vip
+  - name: MVP rank
+    commands: |
+      yapperm user {username} parent set mvp
+      kit grant {username} mvp
+  - name: Elite rank
+    commands: |
+      yapperm user {username} parent set elite
+      kit grant {username} elite
   - name: Adventurer kit unlock
     commands: |
       yapperm user {username} permission set yapdata.kit.adventurer true

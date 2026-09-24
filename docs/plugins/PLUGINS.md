@@ -697,7 +697,7 @@ power:
   break-speed-bonus-at-max: 2.0   # 3x mine/chop speed at 120
   extra-drops-at-max: 2.0         # +2 copies (3x loot) at 120
   damage-bonus-at-max: 2.0        # 3x melee damage at 120
-  movement-speed-bonus-at-max: 1.0  # 2x walk speed (Marathon) at 120
+  movement-speed-bonus-at-max: 1.0  # 2x walk/fly speed (Marathon) at 120; sprint-fly stays ×2 of that
   place-reach-bonus-at-max: 1.0     # +1 place/break reach (Builder) at 120
   keep-block-chance-at-max: 0.25    # 25% keep the placed block (Builder) at 120
   extra-hearts-at-max: 10.0         # +5 hearts (Health) at 120

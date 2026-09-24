@@ -196,7 +196,7 @@ Folia plugin) that applies Hor+ with **separate profiles** for each panel class.
 
 ```bash
 cd client/yap-ultrawide && ./gradlew build
-# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.13.jar
+# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.17.jar
 # or: ./scripts/packs/build-yap-client-render.sh → dist/client-mods/client_mods.zip
 #    (also synced into releases/<ver>/ by publishReleasesFolder)```
 
@@ -204,14 +204,13 @@ Config: `.minecraft/config/yap-ultrawide.json`
 
 | Band | Typical panels | Default mode |
 |------|----------------|--------------|
-| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | slider → 90°–115° horizontal, edges compressed |
-| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | slider → 90°–115° horizontal, edges compressed |
+| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | own camera, 110° across |
+| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | own camera, 110° across |
 
-The FOV slider still changes the view. On ultrawide, slider 70 is about 102°
-across, and the edges are compressed so the sides stay straight. Hands stay
-on the vanilla HUD camera (`affectHudFov: false`) so the
-weapon stays in the corner. View-bob is scaled with the FOV change so walking
-does not slide the world under the crosshair.
+The video-settings FOV slider does not move this view. Width is
+`targetHorizontalFov` in `yap-ultrawide.json`. Hands stay on the vanilla HUD
+camera (`affectHudFov: false`) so the weapon stays in the corner. View-bob is
+scaled with the camera so walking does not slide the world under the crosshair.
 
 Vanilla, Bedrock, and players without the mod still join.
 See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).

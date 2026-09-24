@@ -1,0 +1,16 @@
+# Auction House NPC — opens the shared /ah GUI.
+# Requires yap-npcs + yap-playerdata (features.auctions + economy) + yap-essentials.
+#
+# Players can browse listings, buy with click, and sell via /ah sell <price>
+# (or the Sell button hint in the GUI).
+
+/npc create auction_house Auction House
+/npc setplayer auction_house ah
+/npc setdialogue auction_house &6Auction House&7 — buy from the board, sell held items, manage your listings.
+/npc respawn
+
+# Optional: place at hub coords
+# /npc create auction_house at world -8 64 0 270 Auction House
+# /npc setplayer auction_house ah
+# /npc setdialogue auction_house &6Auction House&7 — browse, buy, and list gear.
+# /npc respawn

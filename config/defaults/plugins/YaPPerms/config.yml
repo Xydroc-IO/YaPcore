@@ -24,7 +24,7 @@ default-track: yap
 # Server context for world/server-scoped nodes (blank = only global + matching world)
 server-context: ""
 
-# Apply YaP starter rank pack on first boot (default/vip/staff/admin/owner + track yap)
+# Apply YaP starter rank pack on first boot (default/vip/mvp/elite/staff/admin/owner + track yap)
 apply-starter-pack-on-first-boot: true
 
 # Chat/tab meta uses legacy § codes; Adventure consumers may translate
@@ -43,6 +43,20 @@ groups:
     name-color: "&a"
     chat-color: "&f"
     parents: [default]
+  mvp:
+    weight: 20
+    prefix: "&b[MVP] "
+    suffix: " &b✦"
+    name-color: "&b"
+    chat-color: "&f"
+    parents: [vip]
+  elite:
+    weight: 30
+    prefix: "&d[Elite] "
+    suffix: " &d✦"
+    name-color: "&d"
+    chat-color: "&f"
+    parents: [mvp]
   # Legacy alias — same ladder step as staff; prefer assigning staff going forward
   mod:
     weight: 45
@@ -50,14 +64,14 @@ groups:
     suffix: ""
     name-color: "&9"
     chat-color: "&f"
-    parents: [vip]
+    parents: [elite]
   staff:
     weight: 50
     prefix: "&b[Staff] "
     suffix: ""
     name-color: "&b"
     chat-color: "&f"
-    parents: [vip]
+    parents: [elite]
   admin:
     weight: 100
     prefix: "&c[Admin] "
@@ -74,7 +88,7 @@ groups:
     parents: [admin]
 
 tracks:
-  yap: [default, vip, staff, admin, owner]
+  yap: [default, vip, mvp, elite, staff, admin, owner]
 
 # Starter permission grants (merged into group rows on applypack).
 # The web rank editor also writes editor-nodes: (allow/deny) and editor-apply.yml.
@@ -87,6 +101,15 @@ starter-grants:
     - yapdata.warp
     - yapdata.kit
     - yapdata.kit.starter
+    - yapdata.kit.wood
+    - yapdata.kit.stone
+    - yapdata.kit.iron
+    - yapdata.kit.gold
+    - yapdata.kit.diamond
+    - yapdata.kit.netherite
+    - yapdata.kit.enchanted_iron
+    - yapdata.kit.enchanted_diamond
+    - yapdata.kit.enchanted_netherite
     - yapdata.mail
     - yapdata.shop
     - yapdata.ah
@@ -106,12 +129,18 @@ starter-grants:
     - yapportals.use
   vip:
     - yapdata.claims.wilderness
-    - yapdata.kit.*
+    - yapdata.kit.vip
     - yapdata.bag.pages.5
     - yapessentials.hat
     - yapessentials.ptime
     - yapessentials.pweather
     - yapessentials.keepinventory
+  mvp:
+    - yapdata.kit.mvp
+    - yapdata.bag.pages.6
+  elite:
+    - yapdata.kit.elite
+    - yapdata.bag.pages.7
   # Junior moderation (legacy) — prefer staff for new hires
   mod:
     - yapchat.staff

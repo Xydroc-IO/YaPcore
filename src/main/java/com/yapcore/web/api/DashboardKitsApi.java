@@ -73,6 +73,7 @@ public final class DashboardKitsApi {
             kit.put("delaySeconds", parseLong(body.get("delaySeconds"), 86400));
             kit.put("maxUses", parseInt(body.get("maxUses"), 0));
             kit.put("cost", parseDouble(body.get("cost"), 0));
+            kit.put("extraCost", parseDouble(body.get("extraCost"), 0));
             kit.put("firstJoin", Boolean.parseBoolean(body.getOrDefault("firstJoin", "false")));
             kit.put("commands", splitLines(body.get("commands")));
             kit.put("items", DashboardKits.decodeItems(body.get("items")));

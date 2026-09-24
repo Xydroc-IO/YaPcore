@@ -96,7 +96,7 @@ public final class PluginConfigHints {
             Map.entry("economy.starting-balance", "Money given the first time someone joins."),
             Map.entry("starting-balance", "Money given the first time someone joins."),
             Map.entry("inventory-profile",
-                    "global = same gear on hub/survival. server = this world keeps its own (use for creative/minigames)."),
+                    "global = same gear on hub/survival/factions (default). server = private to this world (creative/minigames)."),
             Map.entry("apply-starter-pack-on-first-boot", "Creates default, VIP, staff, admin, and owner the first time you boot."),
             Map.entry("local-prefix", "Type ! before a message to talk only to people nearby."),
             Map.entry("filter.mode", "replace = stars out the word. block = refuse the message."),

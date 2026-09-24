@@ -138,9 +138,14 @@ public final class MovementParityTable {
         return (float) Math.max(-1.0, Math.min(1.0, speed() * 2.0));
     }
 
-    /** Bukkit fly speed: Bedrock abilities fly maps ~1:1 onto {@code setFlySpeed}. */
+    /**
+     * Bukkit {@code Player#setFlySpeed} stores abilities as {@code value / 2}
+     * ({@code CraftPlayer}). Catalog {@code fly_speed} is the abilities field
+     * (vanilla {@code 0.05}), so Bukkit needs {@code flySpeed * 2} (vanilla {@code 0.1}).
+     * Bedrock protocol still uses {@link #flySpeedF()} unscaled.
+     */
     public float bukkitFlySpeed() {
-        return (float) Math.max(-1.0, Math.min(1.0, flySpeed()));
+        return (float) Math.max(-1.0, Math.min(1.0, flySpeed() * 2.0));
     }
 
     /** Pipe payload for {@code yap:presence} MOVEMENT message. */

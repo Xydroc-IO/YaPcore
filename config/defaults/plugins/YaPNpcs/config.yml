@@ -9,5 +9,6 @@ dialogue:
   default: "&7Hello, traveler!"
 
 hologram-nametags: true
-nametag-offset: 0.25
+# Extra Y above entity height. Farmer hats auto-add more; raise this if names clip.
+nametag-offset: 0.55
 

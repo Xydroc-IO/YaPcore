@@ -1,0 +1,7 @@
+# Mail desk NPC — inbox, send, reply, clear.
+# Requires yap-npcs + yap-playerdata (features.mail) + yap-essentials.
+
+/npc create mail_desk Mail Desk
+/npc setplayer mail_desk mail
+/npc setdialogue mail_desk &fMail Desk&7 — read, send, and clear your mail here.
+/npc respawn

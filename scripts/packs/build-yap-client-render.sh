@@ -143,6 +143,20 @@ Requirements: Fabric Loader 0.19+ for Minecraft 26.2.
 Vanilla Java / Bedrock / no-mods clients still join YaPcore without these files.
 EOF
 
+# Drop stale yap-visuals-*.jar copies in OUT so a later alphabetical
+# `ls | head` cannot re-pack 1.0.14 over a newer build into client_mods.zip.
+find "$OUT" -maxdepth 1 -name 'yap-visuals-*.jar' ! -name "$(basename "$VISUALS_JAR")" -delete
+find "$OUT" -maxdepth 1 -name 'yap-presence-*.jar' ! -name "$(basename "$PRESENCE_JAR")" -delete
+
+# Refuse to ship a zip that is not the jar we just built.
+case "$(basename "$VISUALS_JAR")" in
+  yap-visuals-1.0.2[8-9].jar|yap-visuals-1.0.[3-9]*.jar|yap-visuals-1.[1-9]*.jar) ;;
+  *)
+    echo "ERROR: refusing stale visuals jar: $VISUALS_JAR (need 1.0.28+)" >&2
+    exit 1
+    ;;
+esac
+
 # Release asset: one zip with a client_mods/ folder (upload this, not loose jars).
 rm -rf "${OUT}/_client_mods_staging"
 mkdir -p "$STAGING"
@@ -155,6 +169,13 @@ rm -f "$CLIENT_MODS_ZIP"
   zip -qr "$CLIENT_MODS_ZIP" client_mods
 )
 rm -rf "${OUT}/_client_mods_staging"
+
+# Guard: zip must contain the exact visuals basename we built (not an older one).
+if ! unzip -l "$CLIENT_MODS_ZIP" | grep -q "client_mods/$(basename "$VISUALS_JAR")\$"; then
+  echo "ERROR: client_mods.zip missing $(basename "$VISUALS_JAR")" >&2
+  unzip -l "$CLIENT_MODS_ZIP" >&2 || true
+  exit 1
+fi
 
 # Optional Discord/site visuals-only bundle (licenses + visuals jar).
 BUNDLE="${OUT}/yap-client-visuals.zip"

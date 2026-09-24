@@ -225,8 +225,12 @@ Storage/feature flags live in YaPPlayerData; matching commands are registered by
 | `yapdata.warp.admin` | op | `/setwarp` `/delwarp` |
 | `yapdata.kit` | true | `/kit` `/kits` GUI |
 | `yapdata.kit.starter` | true | Starter kit |
+| `yapdata.kit.wood` … `netherite` | true | Tier gear kits (leather→netherite) |
+| `yapdata.kit.enchanted_*` | true | Enchanted iron/diamond/netherite kits |
 | `yapdata.kit.adventurer` | false | Adventurer kit (quest / store unlock) |
-| `yapdata.kit.vip` | false | VIP kit (VIP rank also has `yapdata.kit.*`) |
+| `yapdata.kit.vip` | false | VIP rank kit (1 free/day + extra-cost) |
+| `yapdata.kit.mvp` | false | MVP rank kit |
+| `yapdata.kit.elite` | false | Elite rank kit |
 | `yapdata.kit.*` | op | All kits |
 | `yapdata.kit.give` | op | `/kit give` `/kit grant` (console / Tebex) |
 | `yapdata.kit.create` | op | `/createkit` `/delkit` kit signs |

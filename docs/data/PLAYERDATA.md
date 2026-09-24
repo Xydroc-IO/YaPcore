@@ -176,7 +176,7 @@ Kits are **stored** by YaPPlayerData (`kits.yml` + MariaDB). Commands (`/kit`, `
 | Definitions | `plugins/YaPPlayerData/kits.yml` — **same file on Hub + every survival backend** (Control syncs catalog → `fleet/instances/*/plugins/` on ensure / dashboard kit save) |
 | Cooldowns / uses | MariaDB `kit_cooldowns` (network-wide) |
 | Store grants | MariaDB `kit_grants` via `kit grant <player> <kit>` |
-| Access | `yapdata.kit.<id>` / VIP `yapdata.kit.*` (YaPPerms) |
+| Access | `yapdata.kit.<id>` / rank kits vip·mvp·elite (YaPPerms). GUI shows locked kits. |
 | First join | `first-join: true` on a kit (starter ships on) |
 | Cost | `cost:` + economy balance |
 | Signs | `[Kit]` line 1, kit id line 2 |
