@@ -16,6 +16,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Sends staff commands to YaPAdmin / Essentials / Moderation.
@@ -31,6 +33,9 @@ public final class StaffCmds {
      */
     private static final int CHAT_COMMAND_SAFE_LEN = 200;
     private static long lastSendMs;
+    /** Multi-give buttons enqueue; never drop the 2nd+ command. */
+    private static final ConcurrentLinkedQueue<String> PENDING = new ConcurrentLinkedQueue<>();
+    private static final AtomicBoolean DRAINING = new AtomicBoolean();
 
     private StaffCmds() {
     }
@@ -39,17 +44,59 @@ public final class StaffCmds {
         if (command == null || command.isBlank()) {
             return;
         }
-        long now = System.currentTimeMillis();
-        if (now - lastSendMs < COOLDOWN_MS) {
+        String trimmed = command.startsWith("/") ? command.substring(1) : command;
+        PENDING.offer(trimmed);
+        kickDrain();
+    }
+
+    private static void kickDrain() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null) {
             return;
         }
-        lastSendMs = now;
+        minecraft.execute(StaffCmds::drainOnce);
+    }
+
+    private static void drainOnce() {
+        if (!DRAINING.compareAndSet(false, true)) {
+            return;
+        }
+        String next = PENDING.peek();
+        if (next == null) {
+            DRAINING.set(false);
+            return;
+        }
+        long now = System.currentTimeMillis();
+        long wait = lastSendMs + COOLDOWN_MS - now;
+        if (wait > 0) {
+            Thread t = new Thread(() -> {
+                try {
+                    Thread.sleep(Math.min(Math.max(wait, 1L), COOLDOWN_MS));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                DRAINING.set(false);
+                kickDrain();
+            }, "yap-staff-cmd-queue");
+            t.setDaemon(true);
+            t.start();
+            return;
+        }
+        PENDING.poll();
+        dispatchNow(next);
+        DRAINING.set(false);
+        if (!PENDING.isEmpty()) {
+            kickDrain();
+        }
+    }
+
+    private static void dispatchNow(String trimmed) {
+        lastSendMs = System.currentTimeMillis();
         Minecraft minecraft = Minecraft.getInstance();
         ClientPacketListener connection = minecraft == null ? null : minecraft.getConnection();
         if (connection == null) {
             return;
         }
-        String trimmed = command.startsWith("/") ? command.substring(1) : command;
         if (shouldUseStaffChannel(trimmed)) {
             try {
                 connection.send(new ServerboundCustomPayloadPacket(StaffChannelPayload.run(trimmed)));

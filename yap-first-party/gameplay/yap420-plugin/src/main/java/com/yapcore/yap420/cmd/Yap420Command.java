@@ -329,8 +329,10 @@ public final class Yap420Command implements CommandExecutor, TabCompleter {
             return true;
         }
         String id = args[1].toLowerCase(Locale.ROOT);
-        if (id.equals("seed")) {
-            id = Yap420ItemIds.seed(StrainId.SATIVA);
+        if (id.equals("seed") || id.equals("seeds") || id.equals("sativa") || id.equals("seed_sativa")) {
+            id = Yap420ItemIds.SEED_SATIVA;
+        } else if (id.equals("indica") || id.equals("seed_indica")) {
+            id = Yap420ItemIds.SEED_INDICA;
         }
         int amount = 1;
         if (args.length >= 3) {

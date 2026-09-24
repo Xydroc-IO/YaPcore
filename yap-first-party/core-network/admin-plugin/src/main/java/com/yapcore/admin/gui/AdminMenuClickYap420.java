@@ -43,8 +43,12 @@ final class AdminMenuClickYap420 {
                 plugin.menus().openYap420Hub(player);
             }
             case AdminMenuSlots.Y420_BROWSE -> plugin.menus().openYap420Give(player);
-            case AdminMenuSlots.Y420_GIVE_SEEDS -> {
-                giveAll(player, who, amount, "yap420_seed_sativa", "yap420_seed_indica");
+            case AdminMenuSlots.Y420_GIVE_SEEDS_SATIVA -> {
+                giveAll(player, who, amount, "yap420_seed_sativa");
+                plugin.menus().openYap420Hub(player);
+            }
+            case AdminMenuSlots.Y420_GIVE_SEEDS_INDICA -> {
+                giveAll(player, who, amount, "yap420_seed_indica");
                 plugin.menus().openYap420Hub(player);
             }
             case AdminMenuSlots.Y420_GIVE_BUDS -> {

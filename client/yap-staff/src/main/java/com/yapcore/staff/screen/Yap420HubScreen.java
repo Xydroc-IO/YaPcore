@@ -27,7 +27,9 @@ public final class Yap420HubScreen extends StaffPanelScreen {
 
         addSection("Give (to " + who + ")");
         addButtonGrid(
-                action("Seeds ×16", "Sativa + indica seeds", () -> {
+                action("Sativa seeds ×16", "yap420_seed_sativa", () -> give("yap420_seed_sativa", 16)),
+                action("Indica seeds ×16", "yap420_seed_indica", () -> give("yap420_seed_indica", 16)),
+                action("Both seeds ×16", "Sativa + indica", () -> {
                     give("yap420_seed_sativa", 16);
                     give("yap420_seed_indica", 16);
                 }),

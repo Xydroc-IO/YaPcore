@@ -67,9 +67,13 @@ final class AdminMenusYap420 {
             inv.setItem(22, AdminMenuHolder.icon(Material.BARRIER, NamedTextColor.RED, "YaP420 offline",
                     "Install yap-420.jar / enable YaP420"));
         } else {
-            inv.setItem(AdminMenuSlots.Y420_GIVE_SEEDS, AdminMenuHolder.icon(Material.WHEAT_SEEDS, NamedTextColor.GREEN,
-                    "Give seeds ×" + session.giveAmount(),
-                    "Sativa + indica seeds",
+            inv.setItem(AdminMenuSlots.Y420_GIVE_SEEDS_SATIVA, AdminMenuHolder.icon(Material.WHEAT_SEEDS, NamedTextColor.GREEN,
+                    "Sativa seeds ×" + session.giveAmount(),
+                    "Give sativa only",
+                    "To: " + target));
+            inv.setItem(AdminMenuSlots.Y420_GIVE_SEEDS_INDICA, AdminMenuHolder.icon(Material.WHEAT_SEEDS, NamedTextColor.DARK_GREEN,
+                    "Indica seeds ×" + session.giveAmount(),
+                    "Give indica only",
                     "To: " + target));
             inv.setItem(AdminMenuSlots.Y420_GIVE_BUDS, AdminMenuHolder.icon(Material.DRIED_KELP, NamedTextColor.GREEN,
                     "Give cured buds ×" + session.giveAmount(),

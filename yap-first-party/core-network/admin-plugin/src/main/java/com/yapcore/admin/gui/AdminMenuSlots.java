@@ -24,17 +24,18 @@ final class AdminMenuSlots {
     static final int HUB_YAP420 = 23;
 
     // YaP420 hub
-    static final int Y420_GIVE_SEEDS = 19;
-    static final int Y420_GIVE_BUDS = 20;
-    static final int Y420_GIVE_CONSUME = 21;
-    static final int Y420_GIVE_RACK = 22;
-    static final int Y420_GIVE_ALL = 23;
-    static final int Y420_BROWSE = 24;
-    static final int Y420_AMOUNT = 25;
-    static final int Y420_RELOAD = 28;
-    static final int Y420_REMOVE = 29;
-    static final int Y420_INFO = 30;
-    static final int Y420_STARTER = 31;
+    static final int Y420_GIVE_SEEDS_SATIVA = 19;
+    static final int Y420_GIVE_SEEDS_INDICA = 20;
+    static final int Y420_GIVE_BUDS = 21;
+    static final int Y420_GIVE_CONSUME = 22;
+    static final int Y420_GIVE_RACK = 23;
+    static final int Y420_GIVE_ALL = 24;
+    static final int Y420_BROWSE = 25;
+    static final int Y420_AMOUNT = 28;
+    static final int Y420_RELOAD = 29;
+    static final int Y420_REMOVE = 30;
+    static final int Y420_INFO = 31;
+    static final int Y420_STARTER = 32;
     static final int GIVE_PRESETS = 19;
     static final int GIVE_GEAR = 21;
     static final int GIVE_KITS = 23;
