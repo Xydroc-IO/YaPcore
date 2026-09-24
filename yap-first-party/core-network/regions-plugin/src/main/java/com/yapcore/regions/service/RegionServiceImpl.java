@@ -13,7 +13,6 @@ import com.yapcore.regions.RegionsConfig;
 import com.yapcore.regions.db.AdminRegionRepository;
 import com.yapcore.regions.db.RegionMessageRepository;
 import com.yapcore.regions.db.RegionTemplateRepository;
-import com.yapcore.sched.StaffBypass;
 import com.yapcore.world.CuboidSelection;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -35,6 +34,7 @@ public final class RegionServiceImpl implements RegionService {
     private final RegionMessageRepository messages;
     private final RegionTemplateRepository templates;
     private final PolyDraftService polyDrafts = new PolyDraftService();
+    private final RegionFlagAccessOps access = new RegionFlagAccessOps(this);
     private List<AdminRegion> regions = List.of();
 
     public RegionServiceImpl(RegionsConfig config, AdminRegionRepository repository) {
@@ -311,149 +311,89 @@ public final class RegionServiceImpl implements RegionService {
     }
 
     public boolean canBuild(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.BUILD) == FlagValue.ALLOW;
+        return access.canBuild(player, location);
     }
 
     public boolean canEnter(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.ENTRY) == FlagValue.ALLOW;
+        return access.canEnter(player, location);
     }
 
     public boolean isPvpAllowed(Player attacker, Player victim) {
-        if (StaffBypass.land(attacker)) {
-            return true;
-        }
-        Optional<AdminRegion> region = at(victim.getLocation());
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.PVP) == FlagValue.ALLOW;
+        return access.isPvpAllowed(attacker, victim);
     }
 
     /** When false, players in the region take no damage and deal no damage. */
     public boolean isDamageAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.DAMAGE) == FlagValue.ALLOW;
+        return access.isDamageAllowed(location);
     }
 
     public boolean isMobDamageAllowed(Player victim) {
-        Optional<AdminRegion> region = at(victim.getLocation());
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.MOB_DAMAGE) == FlagValue.ALLOW;
+        return access.isMobDamageAllowed(victim);
     }
 
     public boolean isFireSpreadAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.FIRE_SPREAD) == FlagValue.ALLOW;
+        return access.isFireSpreadAllowed(location);
     }
 
     public boolean isMobSpawningAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
+        return access.isMobSpawningAllowed(location);
     }
 
     /** Hostile mobs may path/spawn into this location when allowed (default). */
     public boolean isMobEntryAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.MOB_ENTRY) == FlagValue.ALLOW;
+        return access.isMobEntryAllowed(location);
     }
 
     /**
      * When the covering region has {@code weather deny}, force clear client weather for players.
      */
     public boolean forcesClearWeather(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return false;
-        }
-        return resolve(region.get(), RegionFlag.WEATHER) == FlagValue.DENY;
+        return access.forcesClearWeather(location);
     }
 
     public boolean canOpenContainer(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.CHEST_ACCESS) == FlagValue.ALLOW;
+        return access.canOpenContainer(player, location);
     }
 
     public boolean canInteract(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.INTERACT) == FlagValue.ALLOW;
+        return access.canInteract(player, location);
     }
 
     /** Doors / buttons / pressure plates / levers / gates. */
     public boolean canUse(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.USE) == FlagValue.ALLOW;
+        return access.canUse(player, location);
     }
 
     public boolean canDropItems(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.ITEM_DROP) == FlagValue.ALLOW;
+        return access.canDropItems(player, location);
     }
 
     public boolean canPickupItems(Player player, Location location) {
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        return flagAt(location, RegionFlag.ITEM_PICKUP) == FlagValue.ALLOW;
+        return access.canPickupItems(player, location);
     }
 
     public boolean isTntAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.TNT) == FlagValue.ALLOW;
+        return access.isTntAllowed(location);
     }
 
     public boolean isCreeperExplosionAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return true;
-        }
-        return resolve(region.get(), RegionFlag.CREEPER_EXPLOSION) == FlagValue.ALLOW;
+        return access.isCreeperExplosionAllowed(location);
     }
 
     public boolean isHungerAllowed(Location location) {
-        return flagAt(location, RegionFlag.HUNGER) == FlagValue.ALLOW;
+        return access.isHungerAllowed(location);
     }
 
     public boolean isFarmlandTrampleAllowed(Location location) {
-        return flagAt(location, RegionFlag.FARMLAND_TRAMPLE) == FlagValue.ALLOW;
+        return access.isFarmlandTrampleAllowed(location);
     }
 
     public boolean isItemFrameAllowed(Location location) {
-        return flagAt(location, RegionFlag.ITEM_FRAME) == FlagValue.ALLOW;
+        return access.isItemFrameAllowed(location);
     }
 
     public boolean isArmorStandAllowed(Location location) {
-        return flagAt(location, RegionFlag.ARMOR_STAND) == FlagValue.ALLOW;
+        return access.isArmorStandAllowed(location);
     }
 
     /**
@@ -462,31 +402,23 @@ public final class RegionServiceImpl implements RegionService {
      * Outside any admin region, returns {@code false} (managed NPCs stay protected).
      */
     public boolean isNpcDamageAllowed(Location location) {
-        Optional<AdminRegion> region = at(location);
-        if (region.isEmpty()) {
-            return false;
-        }
-        FlagValue explicit = region.get().flags().get(RegionFlag.NPC_DAMAGE);
-        if (explicit != null) {
-            return explicit == FlagValue.ALLOW;
-        }
-        return resolve(region.get(), RegionFlag.DAMAGE) == FlagValue.ALLOW;
+        return access.isNpcDamageAllowed(location);
     }
 
     public boolean isLeafDecayAllowed(Location location) {
-        return flagAt(location, RegionFlag.LEAF_DECAY) == FlagValue.ALLOW;
+        return access.isLeafDecayAllowed(location);
     }
 
     public boolean isPistonsAllowed(Location location) {
-        return flagAt(location, RegionFlag.PISTONS) == FlagValue.ALLOW;
+        return access.isPistonsAllowed(location);
     }
 
     public boolean isVehiclePlaceAllowed(Location location) {
-        return flagAt(location, RegionFlag.VEHICLE_PLACE) == FlagValue.ALLOW;
+        return access.isVehiclePlaceAllowed(location);
     }
 
     public boolean isVehicleDestroyAllowed(Location location) {
-        return flagAt(location, RegionFlag.VEHICLE_DESTROY) == FlagValue.ALLOW;
+        return access.isVehicleDestroyAllowed(location);
     }
 
     private AdminRegion requireNamed(String name) throws SQLException {

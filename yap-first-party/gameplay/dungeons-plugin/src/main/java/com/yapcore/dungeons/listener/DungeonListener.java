@@ -1,9 +1,9 @@
 package com.yapcore.dungeons.listener;
 
-import com.yapcore.claims.ClaimLookups;
 import com.yapcore.dungeons.DungeonsConfig;
 import com.yapcore.dungeons.gen.DungeonCarver;
 import com.yapcore.dungeons.gui.DungeonMenu;
+import com.yapcore.dungeons.loot.LootService;
 import com.yapcore.dungeons.portal.DungeonPortalRegistry;
 import com.yapcore.dungeons.portal.DungeonPortalRehydrate;
 import com.yapcore.dungeons.portal.DungeonPortalStore;
@@ -12,39 +12,34 @@ import com.yapcore.dungeons.portal.PortalStructure;
 import com.yapcore.dungeons.portal.PortalStructureTags;
 import com.yapcore.dungeons.service.DungeonInstanceManager;
 import com.yapcore.dungeons.service.LiveRun;
-import com.yapcore.messages.YapMessages;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Map;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Dungeon portals: craftable block (click) + crying-obsidian frame (walk-through).
@@ -61,10 +56,10 @@ public final class DungeonListener implements Listener {
     private final DungeonPortalStore store;
     private final DungeonMenu menu;
     private final DungeonInstanceManager instances;
+    private final LootService loot;
     private final NamespacedKey ownerKey;
     private final NamespacedKey bossKey;
-    /** Debounce so move + portal events do not double-open the menu. */
-    private final Map<UUID, Long> recentEnterMs = new ConcurrentHashMap<>();
+    private final DungeonPortalHijack portalHijack;
 
     public DungeonListener(
             JavaPlugin plugin,
@@ -74,7 +69,8 @@ public final class DungeonListener implements Listener {
             PortalStructureTags structureTags,
             DungeonPortalStore store,
             DungeonMenu menu,
-            DungeonInstanceManager instances) {
+            DungeonInstanceManager instances,
+            LootService loot) {
         this.plugin = plugin;
         this.config = config;
         this.portalItems = portalItems;
@@ -83,8 +79,40 @@ public final class DungeonListener implements Listener {
         this.store = store;
         this.menu = menu;
         this.instances = instances;
+        this.loot = loot;
         this.ownerKey = new NamespacedKey(plugin, "yap_dungeon_portal_owner");
         this.bossKey = new NamespacedKey(plugin, DungeonCarver.BOSS_PDC_KEY);
+        this.portalHijack = new DungeonPortalHijack(
+                plugin, config, structure, structureTags, menu, instances);
+        plugin.getServer().getPluginManager().registerEvents(
+                new DungeonStructureInteract(
+                        config, portalItems, structure, structureTags, store, menu, instances),
+                plugin);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onDungeonChestOpen(InventoryOpenEvent event) {
+        if (!(event.getPlayer() instanceof Player)) {
+            return;
+        }
+        if (!(event.getInventory().getHolder() instanceof Chest chest)) {
+            return;
+        }
+        Block block = chest.getBlock();
+        if (!chest.getPersistentDataContainer().has(loot.chestKey(), PersistentDataType.STRING)
+                && !chest.getPersistentDataContainer().has(
+                        new NamespacedKey(plugin, "yap_dungeon_chest"), PersistentDataType.STRING)) {
+            return;
+        }
+        LiveRun run = instances.byWorld(block.getWorld().getName()).orElse(null);
+        int level = run != null ? run.dungeonLevel() : 1;
+        long seed = run != null ? run.seed() : block.getX() * 31L ^ block.getZ();
+        int filled = loot.refillIfEmpty(block, level, seed);
+        if (filled > 0) {
+            plugin.getLogger().info("Refilled empty dungeon chest at "
+                    + block.getX() + "," + block.getY() + "," + block.getZ()
+                    + " stacks=" + filled);
+        }
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -120,140 +148,6 @@ public final class DungeonListener implements Listener {
                     event.getPlayer().sendMessage(
                             "§aDungeon portal frame complete! §7Right-click with an §fEnder Eye §7to activate."));
         }
-    }
-
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void onInteract(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND && event.getHand() != EquipmentSlot.OFF_HAND) {
-            return;
-        }
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
-        Block block = event.getClickedBlock();
-        if (block == null) {
-            return;
-        }
-        Player player = event.getPlayer();
-        ItemStack used = player.getInventory().getItem(event.getHand());
-
-        // Craftable single-block portal (no walk-through) → menu
-        if (block.getState() instanceof org.bukkit.block.TileState tile
-                && tile.getPersistentDataContainer().has(portalItems.blockKey(), PersistentDataType.BYTE)) {
-            event.setCancelled(true);
-            if (denyClaimedPortal(player, block.getLocation())) {
-                return;
-            }
-            menu.open(player, 0);
-            return;
-        }
-
-        if (!config.structureEnabled()) {
-            return;
-        }
-
-        // Already-activated structure → open menu (walk-through also works)
-        Optional<Block> keystone = structureTags.findNearbyKeystone(
-                block, Math.max(structure.outerWidth(), structure.outerHeight()));
-        if (keystone.isPresent()) {
-            Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
-            if (frame.isPresent() && structure.contains(frame.get(), block, 1)) {
-                event.setCancelled(true);
-                structure.ensureWalkable(frame.get());
-                DungeonPortalRegistry.register(frame.get());
-                if (denyClaimedPortal(player, block.getLocation())) {
-                    return;
-                }
-                if (instances.byPlayer(player.getUniqueId()).isPresent()) {
-                    player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
-                    return;
-                }
-                menu.open(player, 0);
-                return;
-            }
-        }
-
-        // Also allow right-click on the lime interior glass
-        if (structure.isInteriorBlock(block) || block.getType().name().contains("STAINED_GLASS")) {
-            Optional<Block> near = structureTags.findNearbyKeystone(
-                    block, Math.max(structure.outerWidth(), structure.outerHeight()) + 1);
-            if (near.isPresent()) {
-                Optional<PortalStructure.Frame> fr = structureTags.frameFromKeystone(near.get());
-                if (fr.isPresent() && structure.contains(fr.get(), block, 1)) {
-                    event.setCancelled(true);
-                    structure.ensureWalkable(fr.get());
-                    DungeonPortalRegistry.register(fr.get());
-                    if (denyClaimedPortal(player, block.getLocation())) {
-                        return;
-                    }
-                    if (instances.byPlayer(player.getUniqueId()).isPresent()) {
-                        player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
-                        return;
-                    }
-                    menu.open(player, 0);
-                    return;
-                }
-            }
-        }
-
-        // Activate incomplete→complete frame with ender eye (either hand)
-        if (used.getType() != config.structureActivateItem()) {
-            return;
-        }
-        if (block.getType() != structure.frameMaterial() && block.getType() != Material.END_PORTAL_FRAME) {
-            return;
-        }
-        // Always cancel eye-of-ender throw when clicking a dungeon frame block
-        event.setCancelled(true);
-        Optional<PortalStructure.Frame> complete = structure.findCompleteFrame(block);
-        if (complete.isEmpty()) {
-            String why = structure.explainIncomplete(block)
-                    .orElse("need exact " + structure.outerWidth() + "×" + structure.outerHeight()
-                            + " " + pretty(structure.frameMaterial()));
-            player.sendMessage("§cDungeon portal not ready: §7" + why);
-            return;
-        }
-        PortalStructure.Frame frame = complete.get();
-        if (structureTags.isKeystone(frame.keystone())
-                || structureTags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
-            structure.ensureWalkable(frame);
-            DungeonPortalRegistry.register(frame);
-            store.upsert(frame);
-            player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
-            return;
-        }
-        if (!player.hasPermission("yapdungeons.portal.place")) {
-            YapMessages.noPermission(player, "yapdungeons.portal.place");
-            return;
-        }
-        if (denyClaimedPortal(player, block.getLocation())) {
-            return;
-        }
-        structure.fillInterior(frame);
-        structureTags.installKeystone(frame, player.getUniqueId());
-        structure.fillInterior(frame); // keystone is on the frame; keep opening air + swirl
-        DungeonPortalRegistry.register(frame);
-        store.upsert(frame);
-        if (player.getGameMode() != GameMode.CREATIVE) {
-            used.setAmount(used.getAmount() - 1);
-        }
-        player.sendMessage("§aDungeon portal activated! §7Walk through (or right-click the frame) to pick a level.");
-    }
-
-    private static String pretty(Material material) {
-        return material.name().toLowerCase(Locale.ROOT).replace('_', ' ');
-    }
-
-    /**
-     * Same claim gate as nether / End / YaP End doors ({@code nether-portal} flag).
-     * Default deny → owner + ACCESS+ trust + staff only.
-     */
-    private static boolean denyClaimedPortal(Player player, Location location) {
-        if (ClaimLookups.canUsePortal(player, location)) {
-            return false;
-        }
-        player.sendMessage("§cClaimed dungeon portal — only the owner and trusted players can use it.");
-        return true;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -362,7 +256,7 @@ public final class DungeonListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        recentEnterMs.remove(event.getPlayer().getUniqueId());
+        portalHijack.recentEnterMs().remove(event.getPlayer().getUniqueId());
         LiveRun run = instances.byPlayer(event.getPlayer().getUniqueId()).orElse(null);
         if (run == null) {
             return;
@@ -403,16 +297,15 @@ public final class DungeonListener implements Listener {
         if (!config.structureEnabled()) {
             return;
         }
-        if (dungeonFrameAt(to).isEmpty()) {
+        if (portalHijack.dungeonFrameAt(to).isEmpty()) {
             return;
         }
-        // Reuse portal hijack path (claim + keystone + menu) without needing a nether hop
-        hijackDungeonPortal(event.getPlayer(), to, PlayerTeleportEvent.TeleportCause.NETHER_PORTAL);
+        portalHijack.hijackDungeonPortal(event.getPlayer(), to, PlayerTeleportEvent.TeleportCause.NETHER_PORTAL);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPortal(PlayerPortalEvent event) {
-        if (!hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
+        if (!portalHijack.hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
             return;
         }
         event.setCancelled(true);
@@ -427,7 +320,7 @@ public final class DungeonListener implements Listener {
                 event.getPortalType() == org.bukkit.PortalType.NETHER
                         ? PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
                         : PlayerTeleportEvent.TeleportCause.UNKNOWN;
-        if (!hijackDungeonPortal(player, event.getFrom(), cause)) {
+        if (!portalHijack.hijackDungeonPortal(player, event.getFrom(), cause)) {
             return;
         }
         event.setCancelled(true);
@@ -438,10 +331,9 @@ public final class DungeonListener implements Listener {
         Location to = event.getTo();
         boolean toNether = to != null && to.getWorld() != null
                 && to.getWorld().getEnvironment() == org.bukkit.World.Environment.NETHER;
-        // Walk-through hijack (Folia may fire teleport without PlayerPortalEvent)
         if (!(event instanceof PlayerPortalEvent)
                 && (event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL || toNether)
-                && hijackDungeonPortal(event.getPlayer(), event.getFrom(),
+                && portalHijack.hijackDungeonPortal(event.getPlayer(), event.getFrom(),
                 event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
                         ? event.getCause()
                         : PlayerTeleportEvent.TeleportCause.NETHER_PORTAL)) {
@@ -461,79 +353,4 @@ public final class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * @return true when this was a dungeon crying-obsidian portal (cancel vanilla nether hop)
-     */
-    private boolean hijackDungeonPortal(
-            Player player, Location from, PlayerTeleportEvent.TeleportCause cause) {
-        if (!config.enabled() || !config.structureEnabled()) {
-            return false;
-        }
-        // Accept NETHER_PORTAL cause, or any probe inside a dungeon frame (move enter / Folia)
-        Location probe = from != null ? from : player.getLocation();
-        Optional<PortalStructure.Frame> frame = dungeonFrameAt(probe);
-        if (frame.isEmpty()) {
-            return false;
-        }
-        long now = System.currentTimeMillis();
-        Long prev = recentEnterMs.get(player.getUniqueId());
-        if (prev != null && now - prev < 1500L) {
-            return true;
-        }
-        recentEnterMs.put(player.getUniqueId(), now);
-        if (denyClaimedPortal(player, probe)) {
-            return true;
-        }
-        // Registry means already activated — skip TileState on the move hot path when possible
-        boolean keyed = DungeonPortalRegistry.at(probe).isPresent()
-                || structureTags.isKeystone(frame.get().keystone())
-                || structureTags.findNearbyKeystone(frame.get().keystone(), 1).isPresent();
-        if (keyed) {
-            structure.ensureWalkable(frame.get());
-            DungeonPortalRegistry.register(frame.get());
-        }
-        if (!keyed) {
-            player.sendMessage("§eDungeon frame detected. §7Right-click the frame with an §fEnder Eye §7to activate.");
-            return true;
-        }
-        if (instances.byPlayer(player.getUniqueId()).isPresent()) {
-            player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
-            return true;
-        }
-        plugin.getLogger().info("Dungeon portal walk-in " + player.getName()
-                + " at " + probe.getBlockX() + "," + probe.getBlockY() + "," + probe.getBlockZ());
-        player.sendMessage("§7Opening dungeon menu…");
-        menu.open(player, 0);
-        return true;
-    }
-
-    private Optional<PortalStructure.Frame> dungeonFrameAt(Location loc) {
-        if (loc == null || loc.getWorld() == null) {
-            return Optional.empty();
-        }
-        Optional<PortalStructure.Frame> registered = DungeonPortalRegistry.at(loc);
-        if (registered.isPresent()) {
-            return registered;
-        }
-        Block block = loc.getBlock();
-        int radius = Math.max(structure.outerWidth(), structure.outerHeight());
-        Optional<Block> keystone = structureTags.findNearbyKeystone(block, radius);
-        if (keystone.isEmpty()) {
-            keystone = structureTags.findNearbyKeystone(block.getRelative(0, -1, 0), radius);
-        }
-        if (keystone.isPresent()) {
-            Optional<PortalStructure.Frame> fromKey = structureTags.frameFromKeystone(keystone.get());
-            if (fromKey.isPresent()
-                    && (structure.contains(fromKey.get(), block, 4)
-                    || structure.contains(fromKey.get(), block.getRelative(0, -1, 0), 4))) {
-                DungeonPortalRegistry.register(fromKey.get());
-                return fromKey;
-            }
-        }
-        Optional<PortalStructure.Frame> around = structure.findFrameContaining(block);
-        if (around.isPresent()) {
-            return around;
-        }
-        return structure.findFrameContaining(block.getRelative(0, -1, 0));
-    }
 }

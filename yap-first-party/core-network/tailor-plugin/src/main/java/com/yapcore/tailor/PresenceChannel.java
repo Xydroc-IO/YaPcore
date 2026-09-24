@@ -5,9 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -33,9 +31,6 @@ public final class PresenceChannel implements PluginMessageListener {
 
     public static final String CHANNEL = "yap:presence";
 
-    private static final String FIXTURE_GEO =
-            "protocol/bedrock/parity/band_26_50/fixtures/skin/geometry.humanoid.custom.json";
-
     private final TailorPlugin plugin;
     private final TailorServiceImpl service;
     private final TailorEmoteCatalog emotes = TailorEmoteCatalog.get();
@@ -44,11 +39,13 @@ public final class PresenceChannel implements PluginMessageListener {
     private final ConcurrentHashMap<UUID, PresenceInboundCommands.PngUpload> pngUploads =
             new ConcurrentHashMap<>();
     private final PresenceInboundCommands inbound;
+    private final PresenceSkinBroadcast skinBroadcast;
 
     public PresenceChannel(TailorPlugin plugin, TailorServiceImpl service) {
         this.plugin = plugin;
         this.service = service;
         this.inbound = new PresenceInboundCommands(this, service, pngUploads);
+        this.skinBroadcast = new PresenceSkinBroadcast(plugin, service, presenceClients);
     }
 
     public void register() {
@@ -97,10 +94,10 @@ public final class PresenceChannel implements PluginMessageListener {
             sendEmoteCatalog(player);
             sendWardrobe(player);
             YapSched.async(plugin, () -> {
-                sendSkinAsync(viewer, player.getUniqueId());
+                skinBroadcast.sendSkinAsync(viewer, player.getUniqueId());
                 for (Player other : Bukkit.getOnlinePlayers()) {
                     if (!other.getUniqueId().equals(viewer)) {
-                        sendSkinAsync(viewer, other.getUniqueId());
+                        skinBroadcast.sendSkinAsync(viewer, other.getUniqueId());
                     }
                 }
             });
@@ -278,16 +275,7 @@ public final class PresenceChannel implements PluginMessageListener {
      * Called after a successful ChassisSkinPush.
      */
     public void sendSkin(Player subject) {
-        if (subject == null) {
-            return;
-        }
-        UUID subjectUuid = subject.getUniqueId();
-        YapSched.async(plugin, () -> {
-            for (UUID client : presenceClients) {
-                sendSkinAsync(client, subjectUuid);
-            }
-            sendSkinAsync(subjectUuid, subjectUuid);
-        });
+        skinBroadcast.sendSkin(subject);
     }
 
     /**
@@ -296,207 +284,7 @@ public final class PresenceChannel implements PluginMessageListener {
      * {@code yap-presence} clients.
      */
     public void broadcastExternalSkin(UUID subjectUuid, boolean slim, String skinUrl, String geometryJson) {
-        if (subjectUuid == null || skinUrl == null || skinUrl.isBlank()) {
-            return;
-        }
-        String geo = geometryJson == null ? "" : geometryJson;
-        String payload = "SKIN|"
-                + subjectUuid
-                + "|"
-                + (slim ? "1" : "0")
-                + "|"
-                + skinUrl
-                + "|"
-                + (geo.isEmpty()
-                        ? ""
-                        : Base64.getEncoder().encodeToString(geo.getBytes(StandardCharsets.UTF_8)));
-        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
-        YapSched.global(plugin, () -> {
-            for (UUID client : presenceClients) {
-                Player viewer = Bukkit.getPlayer(client);
-                if (viewer != null && viewer.isOnline()) {
-                    viewer.sendPluginMessage(plugin, CHANNEL, bytes);
-                }
-            }
-            Player subject = Bukkit.getPlayer(subjectUuid);
-            if (subject != null && subject.isOnline() && !presenceClients.contains(subjectUuid)) {
-                subject.sendPluginMessage(plugin, CHANNEL, bytes);
-            }
-        });
-    }
-
-    private void sendSkinAsync(UUID viewerUuid, UUID subjectUuid) {
-        try {
-            Optional<ActiveSkin> activeOpt = service.getActiveSkin(subjectUuid);
-            if (activeOpt.isEmpty()) {
-                byte[] clear = ("SKIN|" + subjectUuid + "|CLEAR").getBytes(StandardCharsets.UTF_8);
-                YapSched.global(plugin, () -> {
-                    Player viewer = Bukkit.getPlayer(viewerUuid);
-                    if (viewer == null || !viewer.isOnline()) {
-                        return;
-                    }
-                    viewer.sendPluginMessage(plugin, CHANNEL, clear);
-                });
-                return;
-            }
-            ActiveSkin active = activeOpt.get();
-            String skinUrl = resolveSkinUrl(active);
-            boolean slim = active.model() == SkinModel.SLIM;
-            String geometryJson = extractGeometryData(active.bedrockCanonicalJson());
-            if (geometryJson == null) {
-                geometryJson = "";
-            }
-            String geoB64 = geometryJson.isEmpty()
-                    ? ""
-                    : Base64.getEncoder().encodeToString(geometryJson.getBytes(StandardCharsets.UTF_8));
-
-            // Prefer in-band PNG so other yap-presence clients don't depend on HTTP / unsigned
-            // GameProfile textures (Mojang CDN URLs applied via YaPTailor unsigned props).
-            byte[] png = readSkinPng(active);
-            if (png != null && png.length > 0 && png.length <= 96_000) {
-                String inline = "SKIN|INLINE|"
-                        + subjectUuid
-                        + "|"
-                        + (slim ? "1" : "0")
-                        + "|"
-                        + Base64.getEncoder().encodeToString(png)
-                        + "|"
-                        + geoB64;
-                byte[] inlineBytes = inline.getBytes(StandardCharsets.UTF_8);
-                YapSched.global(plugin, () -> {
-                    Player viewer = Bukkit.getPlayer(viewerUuid);
-                    if (viewer == null || !viewer.isOnline()) {
-                        return;
-                    }
-                    viewer.sendPluginMessage(plugin, CHANNEL, inlineBytes);
-                });
-            }
-
-            if (skinUrl == null || skinUrl.isBlank()) {
-                if (png == null || png.length == 0) {
-                    plugin.getLogger().warning(
-                            "PresenceChannel: no public skin URL or PNG for " + subjectUuid
-                                    + " — set skin-host-public-base-url so other clients can download");
-                }
-                return;
-            }
-            String payload = "SKIN|"
-                    + subjectUuid
-                    + "|"
-                    + (slim ? "1" : "0")
-                    + "|"
-                    + skinUrl
-                    + "|"
-                    + geoB64;
-            byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
-            YapSched.global(plugin, () -> {
-                Player viewer = Bukkit.getPlayer(viewerUuid);
-                if (viewer == null || !viewer.isOnline()) {
-                    return;
-                }
-                viewer.sendPluginMessage(plugin, CHANNEL, bytes);
-            });
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.FINE, "PresenceChannel sendSkin failed: " + e.getMessage());
-        }
-    }
-
-    private byte[] readSkinPng(ActiveSkin active) {
-        if (active == null || active.playerUuid() == null) {
-            return null;
-        }
-        byte[] local = service.images().readStoredSkin(active.playerUuid());
-        if (local != null && local.length > 0) {
-            return local;
-        }
-        String url = resolveSkinUrl(active);
-        if (url == null || url.isBlank()) {
-            return null;
-        }
-        try {
-            return service.images().downloadAndValidate(url);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private String resolveSkinUrl(ActiveSkin active) {
-        if (active.sourceUrl() != null && !active.sourceUrl().isBlank()) {
-            return service.config().publicSkinUrl(active.playerUuid(), active.sourceUrl());
-        }
-        return service.config().publicSkinUrl(active.playerUuid(), null);
-    }
-
-    private String resolveGeometryJson(ActiveSkin active) {
-        String fromCanonical = extractGeometryData(active.bedrockCanonicalJson());
-        if (fromCanonical != null && !fromCanonical.isBlank()) {
-            return fromCanonical;
-        }
-        return loadFixtureGeometry();
-    }
-
-    /** Pull {@code geometryData} string field from Bedrock-canonical JSON. */
-    static String extractGeometryData(String bedrockCanonicalJson) {
-        if (bedrockCanonicalJson == null || bedrockCanonicalJson.isBlank()) {
-            return "";
-        }
-        String key = "\"geometryData\"";
-        int idx = bedrockCanonicalJson.indexOf(key);
-        if (idx < 0) {
-            return "";
-        }
-        int colon = bedrockCanonicalJson.indexOf(':', idx + key.length());
-        if (colon < 0) {
-            return "";
-        }
-        int i = colon + 1;
-        while (i < bedrockCanonicalJson.length() && Character.isWhitespace(bedrockCanonicalJson.charAt(i))) {
-            i++;
-        }
-        if (i >= bedrockCanonicalJson.length() || bedrockCanonicalJson.charAt(i) != '"') {
-            return "";
-        }
-        i++;
-        StringBuilder sb = new StringBuilder();
-        while (i < bedrockCanonicalJson.length()) {
-            char c = bedrockCanonicalJson.charAt(i++);
-            if (c == '\\') {
-                if (i >= bedrockCanonicalJson.length()) {
-                    break;
-                }
-                char n = bedrockCanonicalJson.charAt(i++);
-                switch (n) {
-                    case '"', '\\', '/' -> sb.append(n);
-                    case 'n' -> sb.append('\n');
-                    case 'r' -> sb.append('\r');
-                    case 't' -> sb.append('\t');
-                    case 'b' -> sb.append('\b');
-                    case 'f' -> sb.append('\f');
-                    default -> {
-                        sb.append('\\').append(n);
-                    }
-                }
-                continue;
-            }
-            if (c == '"') {
-                break;
-            }
-            sb.append(c);
-        }
-        return sb.toString();
-    }
-
-    private String loadFixtureGeometry() {
-        try (InputStream in = PresenceChannel.class.getClassLoader().getResourceAsStream(FIXTURE_GEO)) {
-            if (in == null) {
-                // Tailor jar may not include chassis fixtures — empty geo is OK for emote-only
-                return "";
-            }
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "Failed to load geometry fixture", e);
-            return "";
-        }
+        skinBroadcast.broadcastExternalSkin(subjectUuid, slim, skinUrl, geometryJson);
     }
 
     private static String decode(byte[] message) {
