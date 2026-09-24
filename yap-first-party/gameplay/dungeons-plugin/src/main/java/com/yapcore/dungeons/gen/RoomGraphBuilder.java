@@ -128,6 +128,16 @@ public final class RoomGraphBuilder {
         rooms.add(boss);
         corridors.add(new Corridor(lastCombat.id(), boss.id()));
 
+        // Guarantee at least one treasure room so early clears are not chest-less
+        boolean hasTreasure = rooms.stream().anyMatch(r -> r.kind() == RoomKind.TREASURE);
+        if (!hasTreasure && rooms.size() > 2) {
+            Room swap = rooms.get(1 + rng.nextInt(rooms.size() - 2));
+            if (swap.kind() != RoomKind.ENTRANCE && swap.kind() != RoomKind.BOSS) {
+                rooms.set(rooms.indexOf(swap),
+                        new Room(swap.id(), RoomKind.TREASURE, swap.x(), swap.z(), swap.sizeX(), swap.sizeZ()));
+            }
+        }
+
         return new Layout(List.copyOf(rooms), List.copyOf(corridors), ROOM_Y);
     }
 

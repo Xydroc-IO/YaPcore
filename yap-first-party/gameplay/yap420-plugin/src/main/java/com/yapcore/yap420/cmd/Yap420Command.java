@@ -28,15 +28,19 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-/** /yap420 reload|info|remove|give|sell|pack|unpack */
+/** /yap420 reload|info|remove|purge|give|sell|pack|unpack */
 public final class Yap420Command implements CommandExecutor, TabCompleter {
 
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
@@ -120,7 +124,7 @@ public final class Yap420Command implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(LEGACY.deserialize("&e/yap420 <reload|info|remove|give|sell|pack|unpack>"));
+            sender.sendMessage(LEGACY.deserialize("&e/yap420 <reload|info|remove|purge|give|sell|pack|unpack>"));
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -128,13 +132,14 @@ public final class Yap420Command implements CommandExecutor, TabCompleter {
             case "reload" -> reload(sender);
             case "info" -> info(sender);
             case "remove" -> remove(sender);
+            case "purge", "clear" -> purge(sender, args);
             case "give" -> give(sender, args);
             case "sell", "dealer", "shop" -> sell(sender);
             case "pack" -> pack(sender, args, true);
             case "unpack" -> pack(sender, args, false);
             default -> {
                 sender.sendMessage(LEGACY.deserialize(
-                        "&e/yap420 <reload|info|remove|give|sell|pack|unpack>"));
+                        "&e/yap420 <reload|info|remove|purge|give|sell|pack|unpack>"));
                 yield true;
             }
         };
@@ -172,39 +177,140 @@ public final class Yap420Command implements CommandExecutor, TabCompleter {
             sender.sendMessage(LEGACY.deserialize("&cNo permission."));
             return true;
         }
-        var target = player.getTargetBlockExact(6);
-        if (target == null) {
-            sender.sendMessage(LEGACY.deserialize(config.messages().nothing()));
-            return true;
-        }
-        YapSched.region(plugin, target.getLocation(), () -> {
+        Entity looked = player.getTargetEntity(6);
+        Block target = player.getTargetBlockExact(6);
+        YapSched.region(plugin, player.getLocation(), () -> {
             boolean removed = false;
-            PlotState plot = plots.remove(target.getWorld().getName(), target.getX(), target.getY(), target.getZ())
-                    .orElse(null);
-            if (plot != null) {
-                plantDisplays.remove(plot);
-                plotStore.saveAsync();
-                removed = true;
+            // Prefer looked-at plant display
+            if (looked instanceof ItemDisplay display) {
+                String key = display.getPersistentDataContainer()
+                        .get(plugin.keys().plotId(), PersistentDataType.STRING);
+                if (key != null) {
+                    String[] parts = key.split("\\|");
+                    if (parts.length == 4) {
+                        try {
+                            PlotState plot = plots.remove(
+                                    parts[0], Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]))
+                                    .orElse(null);
+                            if (plot != null) {
+                                plantDisplays.remove(plot);
+                                plotStore.saveAsync();
+                                removed = true;
+                            }
+                        } catch (NumberFormatException ignored) {
+                            // fall through
+                        }
+                    }
+                    display.remove();
+                    removed = true;
+                }
             }
-            RackState rack = racks.remove(target.getWorld().getName(), target.getX(), target.getY(), target.getZ())
-                    .orElse(null);
-            if (rack != null) {
-                rackDisplays.remove(rack);
-                rackStore.saveAsync();
-                removed = true;
-            }
-            PressState press = presses.remove(target.getWorld().getName(), target.getX(), target.getY(), target.getZ())
-                    .orElse(null);
-            if (press != null) {
-                pressDisplays.remove(press);
-                pressStore.saveAsync();
-                removed = true;
+            if (!removed && target != null) {
+                removed = removeAt(target.getWorld().getName(), target.getX(), target.getY(), target.getZ())
+                        || removeAt(target.getWorld().getName(), target.getX(), target.getY() + 1, target.getZ())
+                        || removeAt(target.getWorld().getName(), target.getX(), target.getY() - 1, target.getZ());
             }
             if (removed) {
                 player.sendMessage(LEGACY.deserialize(config.messages().removed()));
             } else {
                 player.sendMessage(LEGACY.deserialize(config.messages().nothing()));
             }
+        });
+        return true;
+    }
+
+    private boolean removeAt(String world, int x, int y, int z) {
+        boolean removed = false;
+        PlotState plot = plots.remove(world, x, y, z).orElse(null);
+        if (plot != null) {
+            plantDisplays.remove(plot);
+            // sweep tagged leftovers
+            var w = org.bukkit.Bukkit.getWorld(world);
+            if (w != null) {
+                var center = new org.bukkit.Location(w, x + 0.5, y + 0.5, z + 0.5);
+                for (Entity ent : w.getNearbyEntities(center, 1.5, 4.0, 1.5)) {
+                    if (ent instanceof ItemDisplay display) {
+                        String key = display.getPersistentDataContainer()
+                                .get(plugin.keys().plotId(), PersistentDataType.STRING);
+                        if (plot.key().equals(key)) {
+                            display.remove();
+                        }
+                    }
+                }
+            }
+            plotStore.saveAsync();
+            removed = true;
+        }
+        RackState rack = racks.remove(world, x, y, z).orElse(null);
+        if (rack != null) {
+            rackDisplays.remove(rack);
+            rackStore.saveAsync();
+            removed = true;
+        }
+        PressState press = presses.remove(world, x, y, z).orElse(null);
+        if (press != null) {
+            pressDisplays.remove(press);
+            pressStore.saveAsync();
+            removed = true;
+        }
+        return removed;
+    }
+
+    /** Clear plots + plant ItemDisplays in a radius around the player (default 6). */
+    private boolean purge(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(LEGACY.deserialize("&cPlayers only — stand next to the stuck plants."));
+            return true;
+        }
+        if (!player.hasPermission("yap420.admin")) {
+            sender.sendMessage(LEGACY.deserialize("&cNo permission."));
+            return true;
+        }
+        int radius = 6;
+        if (args.length >= 2) {
+            try {
+                radius = Math.max(1, Math.min(32, Integer.parseInt(args[1])));
+            } catch (NumberFormatException e) {
+                sender.sendMessage(LEGACY.deserialize("&e/yap420 purge [radius]"));
+                return true;
+            }
+        }
+        final int r = radius;
+        YapSched.region(plugin, player.getLocation(), () -> {
+            int cleared = 0;
+            List<PlotState> hit = new ArrayList<>();
+            for (PlotState plot : plots.all()) {
+                if (!plot.world().equals(player.getWorld().getName())) {
+                    continue;
+                }
+                double dx = plot.x() + 0.5 - player.getLocation().getX();
+                double dy = plot.y() + 0.5 - player.getLocation().getY();
+                double dz = plot.z() + 0.5 - player.getLocation().getZ();
+                if (dx * dx + dy * dy + dz * dz <= (double) r * r) {
+                    hit.add(plot);
+                }
+            }
+            for (PlotState plot : hit) {
+                plantDisplays.remove(plot);
+                plots.remove(plot.world(), plot.x(), plot.y(), plot.z());
+                cleared++;
+            }
+            // Also kill any leftover tagged displays in radius
+            for (Entity ent : player.getNearbyEntities(r, r, r)) {
+                if (!(ent instanceof ItemDisplay display)) {
+                    continue;
+                }
+                String key = display.getPersistentDataContainer()
+                        .get(plugin.keys().plotId(), PersistentDataType.STRING);
+                if (key != null && !key.isBlank()) {
+                    display.remove();
+                    cleared++;
+                }
+            }
+            if (!hit.isEmpty()) {
+                plotStore.saveAsync();
+            }
+            player.sendMessage(LEGACY.deserialize("&aPurged &f" + cleared + " &aplant entries/visuals within &f" + r + "&a."));
         });
         return true;
     }
@@ -324,7 +430,7 @@ public final class Yap420Command implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(List.of("reload", "info", "remove", "give", "sell", "pack", "unpack"), args[0]);
+            return filter(List.of("reload", "info", "remove", "purge", "give", "sell", "pack", "unpack"), args[0]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
             List<String> ids = new ArrayList<>(GIVE_IDS);

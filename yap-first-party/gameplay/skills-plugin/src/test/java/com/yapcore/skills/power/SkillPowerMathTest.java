@@ -79,8 +79,8 @@ class SkillPowerMathTest {
         assertEquals("Break speed: 3.00x", SkillPowerText.lines("Woodcutting", 120, 120, settings).get(0));
         assertEquals("Extra drops: +2", SkillPowerText.lines("mining", 120, 120, settings).get(1));
         assertEquals("Hit damage: 3.00x", SkillPowerText.lines("strength", 120, 120, settings).get(0));
-        assertEquals("Walk speed: 1.00x", SkillPowerText.lines("marathon", 1, 120, settings).get(0));
-        assertEquals("Walk speed: 2.00x", SkillPowerText.lines("marathon", 120, 120, settings).get(0));
+        assertEquals("Walk/fly speed: 1.00x", SkillPowerText.lines("marathon", 1, 120, settings).get(0));
+        assertEquals("Walk/fly speed: 2.00x", SkillPowerText.lines("marathon", 120, 120, settings).get(0));
         assertEquals("Place reach: +0.00", SkillPowerText.lines("builder", 1, 120, settings).get(0));
         assertEquals("Keep block: none", SkillPowerText.lines("builder", 1, 120, settings).get(1));
         assertEquals("Place reach: +1.00", SkillPowerText.lines("builder", 120, 120, settings).get(0));
@@ -100,6 +100,14 @@ class SkillPowerMathTest {
         assertTrue(SkillPowerText.levelUpDetail("excavation", 120, 120, settings).contains("Rare loot"));
         assertFalse(SkillPowerText.levelUpDetail("mining", 1, 120, settings).contains("unlocks at max"));
         assertTrue(SkillPowerText.levelUpDetail("mining", 120, 120, settings).contains("Super Breaker"));
+    }
+
+    @Test
+    void flySpeedTracksMoveSpeedRatio() {
+        assertEquals(0.1f, SkillMoveSpeed.bukkitFlyFromMoveSpeed(0.1, 0.1), 1.0e-6f);
+        assertEquals(0.2f, SkillMoveSpeed.bukkitFlyFromMoveSpeed(0.1, 0.2), 1.0e-6f);
+        assertEquals(0.15f, SkillMoveSpeed.bukkitFlyFromMoveSpeed(0.1, 0.15), 1.0e-6f);
+        assertEquals(1.0f, SkillMoveSpeed.bukkitFlyFromMoveSpeed(0.1, 2.0), 1.0e-6f);
     }
 
     private static Random always(double value) {

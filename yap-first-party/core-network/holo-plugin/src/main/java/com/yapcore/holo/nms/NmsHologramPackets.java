@@ -44,6 +44,8 @@ public final class NmsHologramPackets {
     private final Object dataClientFlags;
     private final Object dataWidth;
     private final Object dataHeight;
+    private final Object dataLineWidth;
+    private final Object dataBackground;
     private final Object dataItem;
     private final Object vecZero;
 
@@ -93,6 +95,9 @@ public final class NmsHologramPackets {
         this.dataClientFlags = nms.staticField(armorStand, "DATA_CLIENT_FLAGS");
         this.dataWidth = firstStatic(nms, display, "DATA_WIDTH_ID", "DATA_WIDTH");
         this.dataHeight = firstStatic(nms, display, "DATA_HEIGHT_ID", "DATA_HEIGHT");
+        this.dataLineWidth = firstStatic(nms, textDisplayCl, "DATA_LINE_WIDTH_ID", "DATA_LINE_WIDTH");
+        this.dataBackground = firstStatic(nms, textDisplayCl,
+                "DATA_BACKGROUND_COLOR_ID", "DATA_BACKGROUND_COLOR");
         this.dataItem = firstStatic(nms, itemDisplayCl, "DATA_ITEM_STACK_ID", "DATA_ITEM_ID", "DATA_ITEM");
         this.vecZero = vec3 == null ? null : nms.staticField(vec3, "ZERO");
         boolean textOk = preferTextDisplay && textDisplayType != null && dataText != null && addEntityCtor != null
@@ -213,10 +218,26 @@ public final class NmsHologramPackets {
         Object nmsText = vanilla(line);
         addValue(values, dataText, nmsText);
         addValue(values, dataBillboard, (byte) 3);
-        addValue(values, dataStyleFlags, (byte) 2);
-        addValue(values, dataWidth, 0.7f);
-        addValue(values, dataHeight, 0.28f);
+        // shadow (1) + default background (4). See-through (2) z-fights / shreds
+        // long names like "Tractor Supply" against sky / ultrawide post FX.
+        addValue(values, dataStyleFlags, (byte) (1 | 4));
+        int chars = plainLen(line);
+        // Display culling box in blocks — roomy enough for long NPC titles.
+        float box = Math.min(3.5f, Math.max(1.0f, chars * 0.14f));
+        addValue(values, dataWidth, box);
+        addValue(values, dataHeight, 0.35f);
+        // Pixel wrap width (not the culling box). Keep long names on one line.
+        addValue(values, dataLineWidth, Math.max(200, chars * 12));
+        // ARGB: semi-opaque black plate so glyphs stay solid over shaders.
+        addValue(values, dataBackground, 0xA0000000);
         return values;
+    }
+
+    private static int plainLen(String line) {
+        String plain = PlainTextComponentSerializer.plainText()
+                .serialize(LegacyComponentSerializer.legacyAmpersand()
+                        .deserialize(line == null ? "" : line));
+        return Math.max(1, plain.length());
     }
 
     private List<Object> armorValues(String line) {

@@ -34,7 +34,7 @@ public final class NpcsConfig {
         }
         defaultDialogue = color(c.getString("dialogue.default", "&7Hello, traveler!"));
         hologramNametags = c.getBoolean("hologram-nametags", true);
-        nametagOffset = c.getDouble("nametag-offset", 0.25);
+        nametagOffset = c.getDouble("nametag-offset", 0.55);
     }
 
     /** Fleet instances stamp {@code yap-server-id.txt}; seed YAML often stays {@code default}. */

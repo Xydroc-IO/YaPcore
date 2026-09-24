@@ -79,7 +79,7 @@ yap420_plant_indica_5:
   item-model: yapitems:yap420_plant_indica_5
 
 yap420_bud_wet_sativa:
-  base: KELP
+  base: GREEN_DYE
   name: "&aWet Sativa Bud"
   lore:
     - "&7Hang on a drying rack"
@@ -87,7 +87,7 @@ yap420_bud_wet_sativa:
   item-model: yapitems:yap420_bud_wet
 
 yap420_bud_wet_indica:
-  base: KELP
+  base: GREEN_DYE
   name: "&2Wet Indica Bud"
   lore:
     - "&7Hang on a drying rack"
@@ -95,7 +95,7 @@ yap420_bud_wet_indica:
   item-model: yapitems:yap420_bud_wet
 
 yap420_bud_cured_sativa:
-  base: DRIED_KELP
+  base: LIME_DYE
   name: "&aCured Sativa Bud"
   lore:
     - "&7Ready to craft"
@@ -103,7 +103,7 @@ yap420_bud_cured_sativa:
   item-model: yapitems:yap420_bud_cured
 
 yap420_bud_cured_indica:
-  base: DRIED_KELP
+  base: LIME_DYE
   name: "&2Cured Indica Bud"
   lore:
     - "&7Ready to craft"

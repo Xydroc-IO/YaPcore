@@ -63,20 +63,20 @@ public final class ParityMovementApplier {
             setAttr(player, Attribute.MOVEMENT_SPEED, SPEED);
             setAttr(player, Attribute.JUMP_STRENGTH, JUMP);
             setAttr(player, Attribute.GRAVITY, GRAVITY);
-            try {
-                setAttr(player, Attribute.FLYING_SPEED, FLY);
-            } catch (Throwable ignored) {
-                // older API
-            }
+            // Players do not use Attribute.FLYING_SPEED — creative fly is abilities.flyingSpeed
+            // via setFlySpeed (CraftPlayer stores value/2). Do not pin FLYING_SPEED here.
             try {
                 setAttr(player, Attribute.BLOCK_INTERACTION_RANGE, REACH_BLOCK);
                 setAttr(player, Attribute.ENTITY_INTERACTION_RANGE, REACH_ENTITY);
             } catch (Throwable ignored) {
                 // pre-1.20.5
             }
+            // Catalog walk/fly are attribute / abilities scales; Bukkit walk/fly APIs are ×2.
             float walk = (float) Math.max(-1.0, Math.min(1.0, SPEED * 2.0));
-            float fly = (float) Math.max(-1.0, Math.min(1.0, FLY));
             player.setWalkSpeed(walk);
+            // Fly tracks effective MOVEMENT_SPEED (skills etc.). Client sprint-fly is still ×2
+            // of abilities flyingSpeed — so the boost doubles whatever walk speed currently is.
+            float fly = bukkitFlyFromMoveSpeed(player);
             player.setFlySpeed(fly);
         } catch (Exception e) {
             if (log != null) {
@@ -90,6 +90,24 @@ public final class ParityMovementApplier {
         if (inst != null) {
             inst.setBaseValue(base);
         }
+    }
+
+    /**
+     * Bukkit fly default is {@code FLY * 2} (vanilla 0.1). Scale by
+     * {@code MOVEMENT_SPEED value / base} so skill walk buffs apply to flight too.
+     */
+    static float bukkitFlyFromMoveSpeed(Player player) {
+        float vanillaFly = (float) Math.max(-1.0, Math.min(1.0, FLY * 2.0));
+        AttributeInstance move = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (move == null) {
+            return vanillaFly;
+        }
+        double base = move.getBaseValue();
+        if (base <= 1.0e-9) {
+            return vanillaFly;
+        }
+        double ratio = Math.max(0.0, move.getValue() / base);
+        return (float) Math.max(-1.0, Math.min(1.0, vanillaFly * ratio));
     }
 
     private static double val(String id, double fallback) {

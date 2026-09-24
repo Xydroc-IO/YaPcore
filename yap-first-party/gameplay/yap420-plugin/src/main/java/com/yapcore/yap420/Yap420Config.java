@@ -25,6 +25,8 @@ public final class Yap420Config {
     private final int minLight;
     private final boolean requireWater;
     private final int waterRadius;
+    /** Cancel farmland → dirt (fade + trample). */
+    private final boolean protectFarmland;
     private final Set<Material> soils;
     private final Set<Material> growthSoils;
     private final double herbalismXp;
@@ -46,6 +48,7 @@ public final class Yap420Config {
             int minLight,
             boolean requireWater,
             int waterRadius,
+            boolean protectFarmland,
             Set<Material> soils,
             Set<Material> growthSoils,
             double herbalismXp,
@@ -66,6 +69,7 @@ public final class Yap420Config {
         this.minLight = minLight;
         this.requireWater = requireWater;
         this.waterRadius = waterRadius;
+        this.protectFarmland = protectFarmland;
         this.soils = soils;
         this.growthSoils = growthSoils;
         this.herbalismXp = herbalismXp;
@@ -111,6 +115,7 @@ public final class Yap420Config {
                 Math.max(0, c.getInt("growth.min-light", 9)),
                 c.getBoolean("growth.require-water-nearby", true),
                 Math.max(1, c.getInt("growth.water-radius", 4)),
+                c.getBoolean("growth.protect-farmland", true),
                 Collections.unmodifiableSet(soils),
                 Collections.unmodifiableSet(growth),
                 Math.max(0.0, c.getDouble("growth.herbalism-xp", 12.0)),
@@ -184,6 +189,11 @@ public final class Yap420Config {
 
     public int waterRadius() {
         return waterRadius;
+    }
+
+    /** When true, farmland never fades/tramples back to dirt. */
+    public boolean protectFarmland() {
+        return protectFarmland;
     }
 
     /** Soils allowed for player planting. */

@@ -173,18 +173,14 @@ public final class DungeonInstanceManager {
                                 YapSched.region(plugin, chestLoc, () -> {
                                     try {
                                         org.bukkit.block.Block block = chestLoc.getBlock();
-                                        if (!(block.getState() instanceof org.bukkit.block.Chest)) {
-                                            // Corridor punch may have wiped it — re-place then fill
-                                            block.setType(org.bukkit.Material.CHEST, false);
-                                        }
-                                        if (block.getState() instanceof org.bukkit.block.Chest chest) {
-                                            loot.fillChest(chest, level, seed);
+                                        int filled = loot.fillChest(block, level, seed);
+                                        if (filled > 0) {
                                             plugin.getLogger().info("Filled dungeon chest at "
                                                     + chestLoc.getBlockX() + "," + chestLoc.getBlockY()
                                                     + "," + chestLoc.getBlockZ()
-                                                    + " items=" + chest.getInventory().getSize());
+                                                    + " stacks=" + filled);
                                         } else {
-                                            plugin.getLogger().warning("Dungeon chest missing at "
+                                            plugin.getLogger().warning("Dungeon chest fill produced 0 stacks at "
                                                     + chestLoc.getBlockX() + "," + chestLoc.getBlockY()
                                                     + "," + chestLoc.getBlockZ());
                                         }
@@ -323,7 +319,7 @@ public final class DungeonInstanceManager {
         if (boss != null && boss.getWorld() != null) {
             YapSched.region(plugin, boss, () -> {
                 try {
-                    Location exit = DungeonExitPortal.spawn(boss);
+                    Location exit = DungeonExitPortal.spawn(boss, run.runId());
                     run.setExitPortal(exit);
                 } catch (Throwable t) {
                     plugin.getLogger().log(Level.WARNING, "exit portal spawn", t);
@@ -417,6 +413,7 @@ public final class DungeonInstanceManager {
         if (run == null) {
             return;
         }
+        DungeonExitPortal.clear(runId);
         run.setState(DungeonRunState.CLEANING);
         for (UUID id : List.copyOf(run.members())) {
             byPlayer.remove(id);

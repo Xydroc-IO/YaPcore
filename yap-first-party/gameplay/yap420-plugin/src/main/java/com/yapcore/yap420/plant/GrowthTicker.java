@@ -50,11 +50,24 @@ public final class GrowthTicker {
             if (PlotStore.isEphemeralWorld(plot.world())) {
                 continue;
             }
-            if (plot.stage() >= config.maxStageIndex()) {
+            World world = Bukkit.getWorld(plot.world());
+            if (world == null || !world.isChunkLoaded(plot.chunkX(), plot.chunkZ())) {
                 continue;
             }
-            World world = Bukkit.getWorld(plot.world());
-            if (world == null) {
+            // Heal missing visuals for mature plants (growth path skips them otherwise)
+            if (plot.stage() >= config.maxStageIndex()) {
+                YapSched.region(plugin, world, plot.x(), plot.z(), () -> {
+                    PlotState current = plots.get(plot.world(), plot.x(), plot.y(), plot.z()).orElse(null);
+                    if (current == null) {
+                        return;
+                    }
+                    PlotState ensured = displays.ensureDisplay(current);
+                    if (ensured.entityUuid() == null
+                            || !ensured.entityUuid().equals(current.entityUuid())) {
+                        plots.put(ensured);
+                        store.saveAsync();
+                    }
+                });
                 continue;
             }
             YapSched.region(plugin, world, plot.x(), plot.z(), () -> advanceIfReady(plot));

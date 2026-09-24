@@ -16,6 +16,7 @@ import com.yapcore.yap420.market.PackService;
 import com.yapcore.yap420.persist.PlotStore;
 import com.yapcore.yap420.persist.RackStore;
 import com.yapcore.yap420.plant.BoneMealListener;
+import com.yapcore.yap420.plant.FarmlandProtectListener;
 import com.yapcore.yap420.plant.GrowthTicker;
 import com.yapcore.yap420.plant.HarvestListener;
 import com.yapcore.yap420.plant.PlantDisplayService;
@@ -97,16 +98,18 @@ public final class Yap420Plugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(
                 new PlantListener(this, config, items, plots, plantDisplays, plotStore), this);
+        getServer().getPluginManager().registerEvents(new FarmlandProtectListener(this), this);
         getServer().getPluginManager().registerEvents(
-                new HarvestListener(this, config, items, plots, plantDisplays, plotStore, herbalism), this);
+                new HarvestListener(this, config, keys, items, plots, plantDisplays, plotStore, herbalism), this);
         getServer().getPluginManager().registerEvents(
-                new BoneMealListener(this, config, plots, plantDisplays, plotStore), this);
+                new BoneMealListener(this, config, keys, plots, plantDisplays, plotStore), this);
         getServer().getPluginManager().registerEvents(
                 new RackListener(this, config, items, racks, rackDisplays, rackStore), this);
         getServer().getPluginManager().registerEvents(
                 new PressListener(this, config, items, presses, pressDisplays, pressStore, packService, pressGui), this);
         getServer().getPluginManager().registerEvents(
-                new ChunkRespawnListener(this, plots, racks, presses, plantDisplays, rackDisplays, pressDisplays), this);
+                new ChunkRespawnListener(this, plots, racks, presses, plantDisplays, rackDisplays, pressDisplays,
+                        plotStore, rackStore, pressStore), this);
         getServer().getPluginManager().registerEvents(
                 new WildSpawnListener(this, plots, plantDisplays, plotStore), this);
         getServer().getPluginManager().registerEvents(
@@ -129,7 +132,8 @@ public final class Yap420Plugin extends JavaPlugin {
         cureTicker.start();
 
         YapSched.globalLater(this, () -> {
-            plantDisplays.respawnAll(plots);
+            // Only ensure loaded chunks — full respawnAll races Folia unloaded regions
+            plantDisplays.ensureLoaded(plots, plotStore);
             rackDisplays.respawnAll(racks);
             pressDisplays.respawnAll(presses);
         }, 40L);
@@ -186,21 +190,13 @@ public final class Yap420Plugin extends JavaPlugin {
         haze.register();
         herbalism = new HerbalismHook(this, config);
         YapSched.globalLater(this, () -> {
-            for (var plot : plots.all()) {
-                plantDisplays.remove(plot);
-            }
-            for (var rack : racks.all()) {
-                rackDisplays.remove(rack);
-            }
-            for (var press : presses.all()) {
-                pressDisplays.remove(press);
-            }
-            plantDisplays.respawnAll(plots);
+            // Re-read plots.yml so admin edits / purge files apply without full restart
+            plotStore.loadSync();
+            rackStore.loadSync();
+            pressStore.loadSync();
+            plantDisplays.ensureLoaded(plots, plotStore);
             rackDisplays.respawnAll(racks);
             pressDisplays.respawnAll(presses);
-            plotStore.saveAsync();
-            rackStore.saveAsync();
-            pressStore.saveAsync();
         }, 5L);
     }
 

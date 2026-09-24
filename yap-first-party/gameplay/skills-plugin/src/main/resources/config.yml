@@ -38,7 +38,7 @@ prefer-over-jobs: true
 skills-directory: skills
 
 # Power sits on top of the level locks. Level 1 is vanilla.
-# At max level (120): 3x break speed, two extra drop copies (3x loot), 3x hit damage, 2x walk speed,
+# At max level (120): 3x break speed, two extra drop copies (3x loot), 3x hit damage, 2x walk/fly speed,
 # +1 block place reach, 25% keep-block, +5 hearts, 2x brew speed, Depth-Strider swim + long breath
 # (infinite underwater air at Swimming 120).
 # Super Breaker / Tree Feller / Green Terra / excavation loot unlock at 120 (abilities are timed, not always-on).

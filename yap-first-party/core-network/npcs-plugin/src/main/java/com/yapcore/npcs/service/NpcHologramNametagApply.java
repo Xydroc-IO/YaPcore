@@ -29,14 +29,38 @@ final class NpcHologramNametagApply {
         // YaPHolo draws the name. Leaving the vanilla tag on stacks a second copy on Java.
         entity.customName(Component.empty());
         entity.setCustomNameVisible(false);
-        Location loc = HologramFollowLoc.at(entity, config.nametagOffset());
+        double offset = effectiveOffset(config, entity);
+        Location loc = HologramFollowLoc.at(entity, offset);
         Optional<Hologram> existing = service.get(hid);
         Hologram holo = existing.orElseGet(() -> service.create(hid, loc, List.of(line)));
         holo.setLines(List.of(line));
-        holo.attach(HologramAttach.npc(npcId, config.nametagOffset()));
+        holo.attach(HologramAttach.npc(npcId, offset));
         holo.teleport(loc);
         service.save();
         return true;
+    }
+
+    /**
+     * Farmer / librarian hats sit above the hitbox and clip tight nametags.
+     * Mannequins need a little extra too so the label clears the head.
+     */
+    static double effectiveOffset(NpcsConfig config, Entity entity) {
+        double base = Math.max(0.35, config.nametagOffset());
+        if (entity instanceof org.bukkit.entity.Villager villager) {
+            org.bukkit.entity.Villager.Profession p = villager.getProfession();
+            if (p == org.bukkit.entity.Villager.Profession.FARMER
+                    || p == org.bukkit.entity.Villager.Profession.LIBRARIAN
+                    || p == org.bukkit.entity.Villager.Profession.FISHERMAN
+                    || p == org.bukkit.entity.Villager.Profession.WEAPONSMITH
+                    || p == org.bukkit.entity.Villager.Profession.ARMORER
+                    || p == org.bukkit.entity.Villager.Profession.TOOLSMITH) {
+                return base + 0.45;
+            }
+        }
+        if (entity instanceof org.bukkit.entity.Mannequin) {
+            return base + 0.2;
+        }
+        return base;
     }
 
     static void delete(String npcId) {

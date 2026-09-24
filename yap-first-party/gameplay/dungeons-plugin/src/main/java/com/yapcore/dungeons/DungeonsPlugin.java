@@ -15,6 +15,7 @@ import com.yapcore.dungeons.listener.DungeonListener;
 import com.yapcore.dungeons.loot.LootService;
 import com.yapcore.dungeons.loot.LootTable;
 import com.yapcore.dungeons.papi.DungeonsPlaceholders;
+import com.yapcore.dungeons.portal.DungeonExitPortal;
 import com.yapcore.dungeons.portal.DungeonPortalRegistry;
 import com.yapcore.dungeons.portal.DungeonPortalRehydrate;
 import com.yapcore.dungeons.portal.DungeonPortalStore;
@@ -80,7 +81,7 @@ public final class DungeonsPlugin extends JavaPlugin {
         }
         getServer().getPluginManager().registerEvents(
                 new DungeonListener(this, config, portalItems, portalStructure, portalStructureTags,
-                        portalStore, menu, instances),
+                        portalStore, menu, instances, lootService),
                 this);
 
         bind("dungeon", new DungeonCommand(dungeonService, menu));
@@ -116,17 +117,19 @@ public final class DungeonsPlugin extends JavaPlugin {
             }, 20L * 60, 20L * 120);
             final int[] pulse = {0};
             YapSched.globalTimer(this, () -> {
-                if (DungeonPortalRegistry.all().isEmpty()) {
-                    return;
-                }
                 float spin = (float) ((pulse[0]++ % 10) * (Math.PI * 2.0 / 10.0));
-                for (PortalStructure.Frame frame : DungeonPortalRegistry.all()) {
-                    int midAlong = frame.minAlong() + (frame.sizeAlong() / 2);
-                    int midX = frame.axis() == org.bukkit.Axis.X ? midAlong : frame.fixed();
-                    int midZ = frame.axis() == org.bukkit.Axis.X ? frame.fixed() : midAlong;
-                    YapSched.region(this, frame.world(), midX, midZ,
-                            () -> DungeonPortalVisuals.spin(frame, spin));
+                // Entrance structure portals
+                if (!DungeonPortalRegistry.all().isEmpty()) {
+                    for (PortalStructure.Frame frame : DungeonPortalRegistry.all()) {
+                        int midAlong = frame.minAlong() + (frame.sizeAlong() / 2);
+                        int midX = frame.axis() == org.bukkit.Axis.X ? midAlong : frame.fixed();
+                        int midZ = frame.axis() == org.bukkit.Axis.X ? frame.fixed() : midAlong;
+                        YapSched.region(this, frame.world(), midX, midZ,
+                                () -> DungeonPortalVisuals.spin(frame, spin));
+                    }
                 }
+                // Boss-clear return portals (not in the structure registry)
+                DungeonExitPortal.spinAll(spin);
             }, 20L, 5L);
         }
         getLogger().info("YaPDungeons ready — activeRuns=" + dungeonService.activeRuns().size());

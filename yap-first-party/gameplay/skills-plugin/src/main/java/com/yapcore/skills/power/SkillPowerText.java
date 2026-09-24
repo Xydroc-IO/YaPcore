@@ -34,7 +34,7 @@ public final class SkillPowerText {
         }
         if ("marathon".equals(id)) {
             double speed = SkillPowerMath.moveSpeed(level, maxLevel, settings.movementSpeedBonusAtMax());
-            return List.of(String.format(Locale.ROOT, "Walk speed: %.2fx", speed));
+            return List.of(String.format(Locale.ROOT, "Walk/fly speed: %.2fx", speed));
         }
         if ("builder".equals(id)) {
             double reach = SkillPowerMath.placeReach(level, maxLevel, settings.placeReachBonusAtMax());

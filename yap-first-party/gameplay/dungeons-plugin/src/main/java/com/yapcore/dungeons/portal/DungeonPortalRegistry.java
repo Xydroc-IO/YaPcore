@@ -23,6 +23,10 @@ public final class DungeonPortalRegistry {
                 + frame.sizeAlong() + "|" + frame.height();
     }
 
+    public static boolean contains(PortalStructure.Frame frame) {
+        return ACTIVE.containsKey(key(frame));
+    }
+
     public static void register(PortalStructure.Frame frame) {
         ACTIVE.put(key(frame), frame);
     }
