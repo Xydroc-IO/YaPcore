@@ -309,6 +309,9 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
             if (arrival == PortalArrival.HOME) {
                 return localTransfer.queueLocalHome(player, cooldownSec, customMsg, portal);
             }
+            if (arrival == PortalArrival.ISLAND) {
+                return localTransfer.queueLocalIsland(player, cooldownSec, customMsg, portal);
+            }
             // SPAWN (default): same-server pad → /setspawn (or world spawn)
             return localTransfer.queueLocalSpawn(player, cooldownSec, customMsg, portal);
         }
@@ -324,69 +327,90 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
                 : config.msgTransferring().replace("{server}", targetServer);
         YapSched.entity(plugin, player, () -> {
             try {
-                try {
-                    if (portal != null) {
-                        visuals.playEnter(player, portal);
-                    } else {
-                        PortalFx.playWarp(player);
-                    }
-                } catch (Exception fx) {
-                    plugin.getLogger().log(Level.FINE, "portal enter FX", fx);
+                if (portal != null) {
+                    visuals.playEnter(player, portal);
+                } else {
+                    PortalFx.playWarp(player);
                 }
-                releaseSessionLockForTransfer(player);
-                if (arrivals != null) {
-                    String home = portal == null ? "home" : portal.homeName();
-                    arrivals.mark(player.getUniqueId(), targetServer, arrival, home);
-                }
-                byte[] payload = LinkConnect.connectPayload(targetServer);
-                // Paper remaps BungeeCord → bungeecord:main; send both for proxy compat.
-                try {
-                    player.sendPluginMessage(plugin, LinkConnect.CHANNEL_LEGACY, payload);
-                } catch (IllegalArgumentException ignored) {
-                    // channel may be unregistered on some Paper builds
-                }
-                try {
-                    player.sendPluginMessage(plugin, LinkConnect.CHANNEL_MODERN, payload);
-                } catch (IllegalArgumentException ignored) {
-                    // optional modern id
-                }
-                String configured = config.connectChannel();
-                if (configured != null
-                        && !configured.equals(LinkConnect.CHANNEL_LEGACY)
-                        && !configured.equals(LinkConnect.CHANNEL_MODERN)) {
-                    player.sendPluginMessage(plugin, configured, payload);
-                }
-                player.sendMessage(message);
-                plugin.getLogger().info("Connect queued " + player.getName() + " → " + targetServer);
-                cooldown.mark(player.getUniqueId(), cooldownSec, System.currentTimeMillis());
-            } catch (IOException e) {
-                player.sendMessage(config.msgNoProxy());
-                plugin.getLogger().log(Level.WARNING, "Connect encode failed", e);
-            } catch (IllegalArgumentException e) {
-                player.sendMessage(config.msgNoProxy());
-                plugin.getLogger().warning("sendPluginMessage: " + e.getMessage());
+            } catch (Exception fx) {
+                plugin.getLogger().log(Level.FINE, "portal enter FX", fx);
             }
+            // Save profile before unlock so the destination cannot load a stale inventory.
+            flushAndReleaseForTransfer(player).whenComplete((ignored, err) ->
+                    YapSched.entity(plugin, player, () -> {
+                        if (!player.isOnline()) {
+                            return;
+                        }
+                        if (err != null) {
+                            plugin.getLogger().log(Level.WARNING,
+                                    "flush before Connect " + player.getName(), err);
+                        }
+                        sendConnect(player, targetServer, arrival, portal, message, cooldownSec);
+                    }));
         });
         return true;
     }
 
-    /** Drop dual-login lock before Connect so hub/survival soft-switch is not rejected. */
-    private void releaseSessionLockForTransfer(Player player) {
+    private void sendConnect(Player player, String targetServer, PortalArrival arrival,
+                             Portal portal, String message, int cooldownSec) {
+        try {
+            if (arrivals != null) {
+                String home = portal == null ? "home" : portal.homeName();
+                arrivals.mark(player.getUniqueId(), targetServer, arrival, home);
+            }
+            byte[] payload = LinkConnect.connectPayload(targetServer);
+            // Paper remaps BungeeCord → bungeecord:main; send both for proxy compat.
+            try {
+                player.sendPluginMessage(plugin, LinkConnect.CHANNEL_LEGACY, payload);
+            } catch (IllegalArgumentException ignored) {
+                // channel may be unregistered on some Paper builds
+            }
+            try {
+                player.sendPluginMessage(plugin, LinkConnect.CHANNEL_MODERN, payload);
+            } catch (IllegalArgumentException ignored) {
+                // optional modern id
+            }
+            String configured = config.connectChannel();
+            if (configured != null
+                    && !configured.equals(LinkConnect.CHANNEL_LEGACY)
+                    && !configured.equals(LinkConnect.CHANNEL_MODERN)) {
+                player.sendPluginMessage(plugin, configured, payload);
+            }
+            player.sendMessage(message);
+            plugin.getLogger().info("Connect queued " + player.getName() + " → " + targetServer);
+            cooldown.mark(player.getUniqueId(), cooldownSec, System.currentTimeMillis());
+        } catch (IOException e) {
+            player.sendMessage(config.msgNoProxy());
+            plugin.getLogger().log(Level.WARNING, "Connect encode failed", e);
+        } catch (IllegalArgumentException e) {
+            player.sendMessage(config.msgNoProxy());
+            plugin.getLogger().warning("sendPluginMessage: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Persist inventory then drop the dual-login lock so Link soft-switch can proceed
+     * without reading a stale DB row.
+     */
+    private java.util.concurrent.CompletableFuture<Void> flushAndReleaseForTransfer(Player player) {
         try {
             Class<?> provider = Class.forName("com.yapcore.playerdata.PlayerDataServiceProvider");
             Object opt = provider.getMethod("find").invoke(null);
             if (!(opt instanceof Optional<?> optional) || optional.isEmpty()) {
-                return;
+                return java.util.concurrent.CompletableFuture.completedFuture(null);
             }
             Object service = optional.get();
-            String serverId = (String) service.getClass().getMethod("serverId").invoke(service);
-            service.getClass()
-                    .getMethod("releaseSessionLock", UUID.class, String.class)
-                    .invoke(service, player.getUniqueId(), serverId);
+            @SuppressWarnings("unchecked")
+            java.util.concurrent.CompletableFuture<Void> fut =
+                    (java.util.concurrent.CompletableFuture<Void>) service.getClass()
+                            .getMethod("flushAndReleaseForTransfer", UUID.class)
+                            .invoke(service, player.getUniqueId());
+            return fut != null ? fut : java.util.concurrent.CompletableFuture.completedFuture(null);
         } catch (ClassNotFoundException ignored) {
-            // YaPPlayerData optional
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
         } catch (Exception e) {
-            plugin.getLogger().log(Level.FINE, "releaseSessionLock before Connect", e);
+            plugin.getLogger().log(Level.FINE, "flushAndReleaseForTransfer before Connect", e);
+            return java.util.concurrent.CompletableFuture.completedFuture(null);
         }
     }
 

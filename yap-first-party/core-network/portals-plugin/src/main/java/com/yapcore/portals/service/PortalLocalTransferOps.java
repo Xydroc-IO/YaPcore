@@ -154,6 +154,77 @@ final class PortalLocalTransferOps {
         return true;
     }
 
+    /** Same-server island pad: walk in → YaPblock island (create on first use). */
+    boolean queueLocalIsland(Player player, int cooldownSec, String customMsg, Portal portal) {
+        long now = System.currentTimeMillis();
+        if (!player.hasPermission("yapportals.bypass.cooldown")
+                && !cooldown.ready(player.getUniqueId(), now)) {
+            int rem = cooldown.remainingSeconds(player.getUniqueId(), now);
+            player.sendMessage(config.msgCooldown().replace("{seconds}", String.valueOf(rem)));
+            return false;
+        }
+        YapSched.entity(plugin, player, () -> {
+            try {
+                if (portal != null) {
+                    visuals.playEnter(player, portal);
+                }
+            } catch (Exception fx) {
+                plugin.getLogger().log(Level.FINE, "portal enter FX", fx);
+            }
+            if (!tryIslandArrive(player)) {
+                player.sendMessage("§cIsland portal needs YaPblock on this server.");
+                return;
+            }
+            if (customMsg != null && !customMsg.isBlank()) {
+                player.sendMessage(customMsg.replace("{server}", config.serverId()));
+            }
+            cooldown.mark(player.getUniqueId(), cooldownSec, System.currentTimeMillis());
+            host.armJoinGrace(player.getUniqueId());
+            host.seedInsideFromLocation(player);
+            plugin.getLogger().info("Local island portal " + player.getName()
+                    + (portal == null ? "" : " via " + portal.name()));
+        });
+        return true;
+    }
+
+    private boolean tryIslandArrive(Player player) {
+        try {
+            Class<?> services = Class.forName("com.yapcore.yapblock.IslandServices");
+            Object opt = services.getMethod("find").invoke(null);
+            if (!(opt instanceof Optional<?> optional) || optional.isEmpty()) {
+                return false;
+            }
+            Object service = optional.get();
+            Object future = service.getClass()
+                    .getMethod("arriveOrCreate", Player.class)
+                    .invoke(service, player);
+            if (!(future instanceof java.util.concurrent.CompletableFuture<?> cf)) {
+                return false;
+            }
+            cf.whenComplete((ok, err) -> YapSched.entity(plugin, player, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (err != null) {
+                    plugin.getLogger().warning("Local island portal failed: " + err.getMessage());
+                    return;
+                }
+                if (Boolean.TRUE.equals(ok)) {
+                    visuals.playArrive(player);
+                    player.sendMessage("§aArrived at your island.");
+                } else {
+                    player.sendMessage("§cCould not open your island — try §f/is create§c.");
+                }
+            }));
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        } catch (Exception e) {
+            plugin.getLogger().warning("Local island portal failed: " + e.getMessage());
+            return false;
+        }
+    }
+
     private boolean tryPlayerHome(Player player, String homeName) {
         try {
             Class<?> provider = Class.forName("com.yapcore.playerdata.HomeAccessProvider");

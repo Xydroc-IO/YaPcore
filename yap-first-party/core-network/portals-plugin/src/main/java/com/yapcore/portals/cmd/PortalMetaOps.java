@@ -137,12 +137,13 @@ final class PortalMetaOps {
 
     boolean handleSetArrival(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            sender.sendMessage("§cUsage: /portal setarrival <name> <spawn|rtp|home> [homeName]");
-            sender.sendMessage("§7spawn = /setspawn · rtp = wild · home = /sethome (optional name)");
+            sender.sendMessage("§cUsage: /portal setarrival <name> <spawn|rtp|home|island> [homeName]");
+            sender.sendMessage("§7spawn = /setspawn · rtp = wild · home = /sethome · island = YaPblock /is home");
             return true;
         }
         if (!com.yapcore.portals.PortalArrival.known(args[2])) {
-            sender.sendMessage("§cUnknown arrival §f" + args[2] + "§c. Use spawn, rtp, or home.");
+            sender.sendMessage("§cUnknown arrival §f" + args[2]
+                    + "§c. Use spawn, rtp, home, or island.");
             return true;
         }
         com.yapcore.portals.PortalArrival arrival = com.yapcore.portals.PortalArrival.parse(args[2]);

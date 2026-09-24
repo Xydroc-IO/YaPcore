@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class EndDoorListener implements Listener {
 
-    public static final String BUILD = "enddoor-20260923-j";
+    public static final String BUILD = "enddoor-20260924-a";
 
     private final JavaPlugin plugin;
     private final PortalsConfig config;

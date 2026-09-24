@@ -1,5 +1,6 @@
 package com.yapcore.link;
 
+import com.yapcore.link.bedrock.FailoverSpawnArrival;
 import com.yapcore.link.protocol.PlayChat;
 import io.netty.channel.Channel;
 
@@ -49,6 +50,9 @@ final class ClientSessionFailover {
         LOG.info("FAILOVER user=" + session.username
                 + " lost=" + lost + " → " + hub.name()
                 + " cause=" + cause);
+        // Same pending-spawn mark as YaPPortals Connect — destination joins at /setspawn
+        // instead of last logout (portal pad). Must run before SoftSwitch begins.
+        FailoverSpawnArrival.mark(session.server.config().home(), session.playerId, hub.name());
         // Run SoftSwitch on the client loop — avoid mutating the dying backend pipeline
         // from inside its channelInactive.
         Runnable start = () -> {

@@ -1,5 +1,6 @@
 package com.yapcore.link;
 
+import com.yapcore.link.bedrock.FailoverSpawnArrival;
 import com.yapcore.link.protocol.McCodec;
 import com.yapcore.link.protocol.McFrameCodec;
 import com.yapcore.link.protocol.McOutboundPacketEncoder;
@@ -53,6 +54,9 @@ final class ClientSessionSoftSwitch {
         if (!supports(session.protocolVersion)) {
             LOG.warning("SOFT-SWITCH unsupported proto=" + session.protocolVersion
                     + " user=" + session.username + " — falling back to reconnect");
+            // Still mark spawn so reconnect lands at /setspawn when no portal pending.
+            FailoverSpawnArrival.markIfAbsent(
+                    session.server.config().home(), session.playerId, target.name());
             fallbackReconnect(session, target, client);
             return;
         }
@@ -61,6 +65,11 @@ final class ClientSessionSoftSwitch {
                     com.yapcore.link.protocol.PlayChat.jsonText("Already switching servers…"));
             return;
         }
+
+        // /hub /server SoftSwitch: land at destination /setspawn. Portal Connect already
+        // wrote island/rtp/home pending — markIfAbsent must not overwrite those.
+        FailoverSpawnArrival.markIfAbsent(
+                session.server.config().home(), session.playerId, target.name());
 
         LOG.info("SWITCH user=" + session.username + " → " + target.name() + " via soft");
         session.pendingSwitchTarget = target.name();

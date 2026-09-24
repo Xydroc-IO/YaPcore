@@ -86,6 +86,16 @@ public final class PortalsPlugin extends JavaPlugin {
             YapSched.globalTimer(this, () -> {
                 EndDoorRehydrate.scanLoaded(this, endStructure, endTags, endStore);
             }, 20L * 15, 20L * 30);
+            // Soft keep-alive: ensure swirl present, do not clear/rebuild every pass
+            YapSched.globalTimer(this, () -> {
+                for (var frame : EndDoorRegistry.all()) {
+                    int midAlong = frame.minAlong() + (frame.sizeAlong() / 2);
+                    int midX = frame.axis() == org.bukkit.Axis.X ? midAlong : frame.fixed();
+                    int midZ = frame.axis() == org.bukkit.Axis.X ? frame.fixed() : midAlong;
+                    YapSched.region(this, frame.world(), midX, midZ,
+                            () -> EndDoorVisuals.ensureFace(frame));
+                }
+            }, 20L * 40, 20L * 40);
             final int[] endPulse = {0};
             YapSched.globalTimer(this, () -> {
                 if (EndDoorRegistry.all().isEmpty()) {
@@ -103,7 +113,8 @@ public final class PortalsPlugin extends JavaPlugin {
             getLogger().info("End doors enabled — build=" + EndDoorListener.BUILD
                     + " frame=" + config.endDoorFrame()
                     + " " + config.endDoorWidth() + "x" + config.endDoorHeight()
-                    + " → " + config.endDoorWorld());
+                    + " → " + config.endDoorWorld()
+                    + " persisted=" + endStore.all().size());
         }
 
         PortalCommands commands = new PortalCommands(this, service, wandListener);

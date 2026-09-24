@@ -1,6 +1,8 @@
 package com.yapcore.link.bedrock.session;
 
+import com.yapcore.link.bedrock.FailoverSpawnArrival;
 import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.cloudburstmc.protocol.bedrock.packet.DisconnectPacket;
 import org.cloudburstmc.protocol.bedrock.packet.TransferPacket;
@@ -77,6 +79,16 @@ final class BedrockSessionHostTransfer {
         }
         LOG.info("BE FAILOVER user=" + state.username
                 + " lost=" + lost + " → " + hub + " cause=" + cause);
+        // Pending SPAWN so destination PortalArrivalListener lands at /setspawn
+        // (not last-logout in front of the portal pad).
+        java.util.UUID uuid = null;
+        if (state.identity != null) {
+            uuid = state.identity.javaUuid();
+        }
+        if (uuid == null && join != null) {
+            uuid = join.uuid();
+        }
+        FailoverSpawnArrival.mark(host.config.linkHome(), uuid, hub.trim());
         softSwitchJavaBackend(host, state, hub.trim(), dest);
         return true;
     }
@@ -146,7 +158,16 @@ final class BedrockSessionHostTransfer {
                 "bungee_connect→soft_switch target=" + targetServer
                         + " je=" + dest.getHostString() + ":" + dest.getPort());
 
-        // Consume pending now — reconnect uses dest directly (not resolveBackend/take).
+        // Same as JE SoftSwitch: SPAWN pending unless portal already marked island/rtp/home.
+        UUID uuid = join.uuid();
+        if (uuid == null && state.identity != null) {
+            uuid = state.identity.javaUuid();
+        }
+        if (uuid != null) {
+            FailoverSpawnArrival.markIfAbsent(host.config.linkHome(), uuid, targetServer.trim());
+        }
+
+        // Consume Connect-pending routing hint — reconnect uses dest directly.
         BedrockConnectPending.take(state.username != null ? state.username : "BedrockPlayer");
 
         join.beginSoftBackendSwitch(targetServer);

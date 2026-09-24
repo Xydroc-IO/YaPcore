@@ -93,6 +93,22 @@ Requires **YaPPlayerData** with `features.homes: true` on the destination. Same-
 pads do not use Link Connect. If the player has no home set, they get a message (fleet
 transfers fall back to spawn).
 
+## Island arrival (YaPblock)
+
+Portals can land players on their **skyblock island** (create on first visit):
+
+```text
+# Lobby → skyblock island
+/portal create to-skyblock skyblock cyan
+/portal setarrival to-skyblock island
+```
+
+Requires **YaPblock** on the destination (`skyblock` fleet backend). First walk-through
+runs island create + paste, then teleports home; later trips go straight to `/is home`.
+If YaPblock is missing, arrival falls back to destination spawn.
+
+See [yapblock.md](../how-to/plugins/yapblock.md).
+
 ## Requirements
 
 1. YaP Link running with `plugins-enabled=true` and `yaplink-server-selector` installed
@@ -107,7 +123,15 @@ transfers fall back to spawn).
    Set `inventory-profile: server` on creative / minigame backends so they keep a separate
    inventory (profile key = that instance’s `server-id`).
 
-`/hub` remains a **Link** command (selector plugin). YaPPortals does not replace it.
+`/hub` and `/server` are **Link** commands (server-selector plugin). SoftSwitch marks a YaPPortals
+**SPAWN** pending arrival when none exists yet, so the destination lands at `/setspawn`
+(same path as portal pads). Portal Connect that already wrote `island` / `rtp` / `home` is
+**not** overwritten.
+
+When a backend dies mid-session (`fallback-on-backend-loss`), Link soft-switches to
+`fallback-server` (usually `lobby`) or the next up server in `try=` (e.g. creative if lobby
+is down) and marks SPAWN the same way — destination must have YaPPortals + YaPEssentials
+`/setspawn`. Lobby/creative should use `spawn.teleport-on-join: true` as a belt-and-suspenders.
 
 ## Quick setup (lobby → survival)
 

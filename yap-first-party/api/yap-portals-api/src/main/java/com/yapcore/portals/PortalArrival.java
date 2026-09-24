@@ -5,12 +5,14 @@ import java.util.Locale;
 /**
  * Where a player lands after using a portal.
  * {@link #SPAWN} is the destination spawn; {@link #RTP} is a random safe spot;
- * {@link #HOME} is the player's YaPPlayerData home on that backend.
+ * {@link #HOME} is the player's YaPPlayerData home on that backend;
+ * {@link #ISLAND} is their YaPblock island (create-on-first if missing).
  */
 public enum PortalArrival {
     SPAWN,
     RTP,
-    HOME;
+    HOME,
+    ISLAND;
 
     public static PortalArrival parse(String raw) {
         if (raw == null || raw.isBlank()) {
@@ -24,6 +26,7 @@ public enum PortalArrival {
         return switch (s) {
             case "rtp", "wild", "random", "wilderness" -> RTP;
             case "home", "sethome", "bed" -> HOME;
+            case "island", "skyblock", "is", "ishome", "island-home" -> ISLAND;
             case "spawn", "hub", "default" -> SPAWN;
             default -> SPAWN;
         };
@@ -40,6 +43,7 @@ public enum PortalArrival {
         return switch (s) {
             case "rtp", "wild", "random", "wilderness",
                  "home", "sethome", "bed",
+                 "island", "skyblock", "is", "ishome", "island-home",
                  "spawn", "hub", "default" -> true;
             default -> false;
         };

@@ -45,7 +45,7 @@ Walk the lobby pad → should Connect → see `Arrived at survival spawn.`
 | `/portal enable\|disable <name>` | Toggle |
 | `/portal settarget <name> <server>` | Change destination |
 | `/portal setcolor <name> <dye>` | Look |
-| `/portal setarrival <name> spawn\|rtp\|home [homeName]` | Landing mode |
+| `/portal setarrival <name> spawn\|rtp\|home\|island [homeName]` | Landing mode |
 | `/portal setcooldown <name> <sec>` | Delay |
 | `/portal setperm <name> [node]` | Extra permission |
 | `/portal setmessage <name> [text]` | `{server}` ok |
@@ -61,12 +61,14 @@ Walk the lobby pad → should Connect → see `Arrived at survival spawn.`
 | `spawn` (default) | Destination `/setspawn` (Essentials), else world spawn |
 | `rtp` | Essentials RTP on destination |
 | `home` | PlayerData `/sethome` (fallback spawn if missing) |
+| `island` | YaPblock island home (auto-create on first visit; needs `yap-block.jar`) |
 
 Same-server pads (target = this `server-id`) teleport locally — no Link Connect.
 
 ```text
 /portal setarrival to-survival-wild rtp
 /portal setarrival to-survival-home home cabin
+/portal setarrival to-skyblock island
 ```
 
 ## Player-built End doors
@@ -97,6 +99,7 @@ Vanilla flat End portals still work; those in claims are gated the same way.
 |---------|-----|
 | Nothing happens | Join via Link; check `enabled: true`; stand inside pad |
 | Transfer but wrong place | `/setspawn` on destination; ensure new portals jar; look for `Portal arrival` in dest log |
+| `/hub` / failover not at spawn | SoftSwitch marks SPAWN pending; destination needs YaPPortals + `/setspawn`; lobby/creative `teleport-on-join: true` |
 | “Already logged in” | `/yapdata unlock <player>`; wait for session unlock |
 | Purple missing textures | Accept pack; rebuild `yapcore-default.zip` |
 | Return pad missing | Recreate on that backend; check `portals.yml` not `{}` |

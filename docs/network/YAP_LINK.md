@@ -175,7 +175,8 @@ See also: [`yap-first-party/link/api/`](../../yap-first-party/link/api/) · [`ya
 | Ping **passthrough** | ✓ | ✓ cached backend probe | **1** ✓ |
 | Forced hosts | ✓ | ✓ `forced-host.<host>=server` | **1** ✓ |
 | Backend health + try failover | ✓ | ✓ `BackendMonitor` (login + mid-session hub rescue) | **1** ✓ |
-| Mid-session backend loss → hub | plugins | ✓ `fallback-on-backend-loss` soft-switch to `try`/hub | **1** ✓ |
+| Mid-session backend loss → hub | plugins | ✓ `fallback-on-backend-loss` soft-switch to `try`/hub + SPAWN pending → `/setspawn` | **1** ✓ |
+| `/hub` `/server` land at spawn | plugins | ✓ SoftSwitch `markIfAbsent` SPAWN pending (does not clobber portal island/rtp) | **1** ✓ |
 | Connect / login / read timeouts | ✓ | ✓ | **1** ✓ |
 | Play-phase system chat | ✓ | ✓ `PlayChat` | **1** ✓ |
 | Aggregate player count in ping | ✓ | ✓ `aggregate-player-count` | **2** ✓ |

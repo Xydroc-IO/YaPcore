@@ -100,11 +100,7 @@ public final class EndDoorStore {
 
     public void upsert(EndDoorStructure.Frame frame) {
         Snap snap = Snap.from(frame);
-        for (Snap existing : snaps) {
-            if (existing.key().equals(snap.key())) {
-                return;
-            }
-        }
+        snaps.removeIf(s -> s.key().equals(snap.key()));
         snaps.add(snap);
         save();
     }

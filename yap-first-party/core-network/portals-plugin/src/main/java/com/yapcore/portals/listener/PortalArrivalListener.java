@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * After a fleet portal Connect, land the player on this backend's spawn,
- * a random wild spot ({@code rtp}), or their YaPPlayerData home ({@code home}).
+ * a random wild spot ({@code rtp}), their YaPPlayerData home ({@code home}),
+ * or their YaPblock island ({@code island}).
  */
 public final class PortalArrivalListener implements Listener {
 
@@ -93,6 +94,12 @@ public final class PortalArrivalListener implements Listener {
                 finishArrival(player);
                 return;
             }
+            if (mode == PortalArrival.ISLAND && tryIslandArrival(player)) {
+                plugin.getLogger().info("Portal arrival " + player.getName() + " → "
+                        + config.serverId() + " island");
+                // finishArrival runs after async island teleport/create
+                return;
+            }
             if (mode == PortalArrival.RTP && tryEssentialsRtp(player)) {
                 plugin.getLogger().info("Portal arrival " + player.getName() + " → "
                         + config.serverId() + " rtp");
@@ -102,6 +109,9 @@ public final class PortalArrivalListener implements Listener {
             if (mode == PortalArrival.HOME) {
                 player.sendMessage("§cNo home §f" + homeName
                         + "§c on this server — landing at spawn. Use §f/sethome§c.");
+            }
+            if (mode == PortalArrival.ISLAND) {
+                player.sendMessage("§cIsland arrival needs YaPblock on this server — landing at spawn.");
             }
             Location spawn = resolveSpawn(player);
             if (spawn == null || spawn.getWorld() == null) {
@@ -119,6 +129,17 @@ public final class PortalArrivalListener implements Listener {
                     + spawn.getBlockX() + "," + spawn.getBlockY() + "," + spawn.getBlockZ()
                     + " (attempt " + n + ")");
             Location dest = spawn;
+            // Soft Link may already place Bedrock on the pad; only skip a yank when
+            // already standing on it. A wider radius left creative→lobby joins on
+            // nearby ground (~12 blocks from /setspawn) in front of hub portals.
+            if (nearSpawn(player.getLocation(), dest, 2.0)) {
+                plugin.getLogger().info("Portal arrival " + player.getName()
+                        + " already on pad — skip yank");
+                player.sendMessage("§7Arrived at §f" + config.serverId() + " §7spawn.");
+                portals.visuals().playArrive(player);
+                finishArrival(player);
+                return;
+            }
             player.teleportAsync(dest).thenAccept(ok -> {
                 if (!Boolean.TRUE.equals(ok) || !player.isOnline()) {
                     if (n < MAX_ATTEMPTS) {
@@ -133,9 +154,9 @@ public final class PortalArrivalListener implements Listener {
                         applying.remove(player.getUniqueId());
                         return;
                     }
-                    // Re-assert spawn once more after PlayerData unfreeze / chunk attach.
                     Location again = resolveSpawn(player);
-                    if (again != null && again.getWorld() != null) {
+                    if (again != null && again.getWorld() != null
+                            && !nearSpawn(player.getLocation(), again, 2.0)) {
                         player.teleportAsync(again);
                     }
                     player.sendMessage("§7Arrived at §f" + config.serverId() + " §7spawn.");
@@ -154,10 +175,53 @@ public final class PortalArrivalListener implements Listener {
         }
     }
 
+    private static boolean nearSpawn(Location at, Location spawn, double maxBlocks) {
+        if (at == null || spawn == null || at.getWorld() == null || spawn.getWorld() == null) {
+            return false;
+        }
+        if (!at.getWorld().equals(spawn.getWorld())) {
+            return false;
+        }
+        return at.distanceSquared(spawn) <= maxBlocks * maxBlocks;
+    }
+
     private void finishArrival(Player player) {
         portals.armJoinGrace(player.getUniqueId());
         portals.seedInsideFromLocation(player);
+        applyEssentialsJoinGamemode(player);
         applying.remove(player.getUniqueId());
+    }
+
+    /** Hub adventure (etc.) via YaPEssentials spawn.force-gamemode. */
+    private static void applyEssentialsJoinGamemode(Player player) {
+        Plugin ess = Bukkit.getPluginManager().getPlugin("YaPEssentials");
+        if (ess == null || !ess.isEnabled()) {
+            return;
+        }
+        try {
+            Object cfg = ess.getClass().getMethod("essentialsConfig").invoke(ess);
+            if (cfg == null) {
+                return;
+            }
+            Object opt = cfg.getClass().getMethod("spawnForceGamemode").invoke(cfg);
+            if (!(opt instanceof Optional<?> optional) || optional.isEmpty()) {
+                return;
+            }
+            Object mode = optional.get();
+            if (mode instanceof org.bukkit.GameMode gameMode) {
+                if (player.getGameMode() != gameMode) {
+                    player.setGameMode(gameMode);
+                }
+                if (gameMode != org.bukkit.GameMode.CREATIVE
+                        && gameMode != org.bukkit.GameMode.SPECTATOR
+                        && player.getAllowFlight()) {
+                    player.setFlying(false);
+                    player.setAllowFlight(false);
+                }
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // optional — Essentials may be older
+        }
     }
 
     /** Prefer waiting until YaPPlayerData has applied the profile (avoids last-logout overwrite). */
@@ -234,6 +298,53 @@ public final class PortalArrivalListener implements Listener {
             return accepted;
         } catch (ReflectiveOperationException e) {
             plugin.getLogger().warning("Portal RTP arrival failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Soft-dep YaPblock: teleport to island home, or create then teleport on first visit.
+     * Returns true when YaPblock accepted the request (finishArrival runs when the future completes).
+     */
+    private boolean tryIslandArrival(Player player) {
+        try {
+            Class<?> services = Class.forName("com.yapcore.yapblock.IslandServices");
+            Object opt = services.getMethod("find").invoke(null);
+            if (!(opt instanceof Optional<?> optional) || optional.isEmpty()) {
+                return false;
+            }
+            Object service = optional.get();
+            Object future = service.getClass()
+                    .getMethod("arriveOrCreate", Player.class)
+                    .invoke(service, player);
+            if (!(future instanceof java.util.concurrent.CompletableFuture<?> cf)) {
+                return false;
+            }
+            cf.whenComplete((ok, err) -> YapSched.entity(plugin, player, () -> {
+                if (!player.isOnline()) {
+                    applying.remove(player.getUniqueId());
+                    return;
+                }
+                if (err != null) {
+                    plugin.getLogger().warning("Portal island arrival failed for "
+                            + player.getName() + ": " + err.getMessage());
+                    applying.remove(player.getUniqueId());
+                    return;
+                }
+                if (Boolean.TRUE.equals(ok)) {
+                    portals.visuals().playArrive(player);
+                    player.sendMessage("§aArrived at your island.");
+                    finishArrival(player);
+                } else {
+                    applying.remove(player.getUniqueId());
+                    player.sendMessage("§cCould not open your island — try §f/is create§c or §f/is home§c.");
+                }
+            }));
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        } catch (Exception e) {
+            plugin.getLogger().warning("Portal island arrival failed: " + e.getMessage());
             return false;
         }
     }

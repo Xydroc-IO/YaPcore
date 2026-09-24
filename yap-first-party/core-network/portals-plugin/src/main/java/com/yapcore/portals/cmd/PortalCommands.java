@@ -134,13 +134,13 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 3) {
             if ("settarget".equals(sub) || "create".equals(sub) || "define".equals(sub)) {
-                return filter(List.of("lobby", "hub", "survival", "creative", "factions"), args[2]);
+                return filter(List.of("lobby", "hub", "survival", "creative", "factions", "skyblock"), args[2]);
             }
             if ("setcolor".equals(sub)) {
                 return filter(PortalColors.names(), args[2]);
             }
             if ("setarrival".equals(sub)) {
-                return filter(List.of("spawn", "rtp", "wild", "home"), args[2]);
+                return filter(List.of("spawn", "rtp", "wild", "home", "island", "skyblock"), args[2]);
             }
             if ("setshape".equals(sub)) {
                 if (com.yapcore.portals.PortalShape.Kind.known(args[1])) {

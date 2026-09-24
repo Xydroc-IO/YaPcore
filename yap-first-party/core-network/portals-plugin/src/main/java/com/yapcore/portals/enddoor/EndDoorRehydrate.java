@@ -88,14 +88,13 @@ public final class EndDoorRehydrate {
         int cx = frame.keystone().getX() >> 4;
         int cz = frame.keystone().getZ() >> 4;
         YapSched.regionChunk(plugin, frame.world(), cx, cz, () -> {
-            if (EndDoorRegistry.contains(frame)) {
-                store.upsert(frame);
-                return;
+            if (!EndDoorRegistry.contains(frame)) {
+                EndDoorRegistry.register(frame);
             }
-            EndDoorRegistry.register(frame);
             store.upsert(frame);
             UUID owner = tags.owner(frame.keystone()).orElse(new UUID(0L, 0L));
             tags.installKeystone(frame, owner);
+            // Always re-arm walkability + blue swirl (restarts / OOM drop ItemDisplays)
             structure.ensureWalkable(frame);
         });
     }
