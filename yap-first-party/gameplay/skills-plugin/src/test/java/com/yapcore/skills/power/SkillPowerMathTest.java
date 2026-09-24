@@ -31,7 +31,7 @@ class SkillPowerMathTest {
     void maxLevelReachesConfiguredCap() {
         assertEquals(3.0, SkillPowerMath.breakSpeed(120, 120, 2.0), 1.0e-9);
         assertEquals(3.0, SkillPowerMath.damageMultiplier(120, 120, 2.0), 1.0e-9);
-        assertEquals(2.0, SkillPowerMath.moveSpeed(120, 120, 1.0), 1.0e-9);
+        assertEquals(1.5, SkillPowerMath.moveSpeed(120, 120, 0.5), 1.0e-9);
         assertEquals(1.0, SkillPowerMath.placeReach(120, 120, 1.0), 1.0e-9);
         assertEquals(0.25, SkillPowerMath.keepBlockChance(120, 120, 0.25), 1.0e-9);
         assertEquals(10.0, SkillPowerMath.extraHearts(120, 120, 10.0), 1.0e-9);
@@ -80,7 +80,7 @@ class SkillPowerMathTest {
         assertEquals("Extra drops: +2", SkillPowerText.lines("mining", 120, 120, settings).get(1));
         assertEquals("Hit damage: 3.00x", SkillPowerText.lines("strength", 120, 120, settings).get(0));
         assertEquals("Walk/fly speed: 1.00x", SkillPowerText.lines("marathon", 1, 120, settings).get(0));
-        assertEquals("Walk/fly speed: 2.00x", SkillPowerText.lines("marathon", 120, 120, settings).get(0));
+        assertEquals("Walk/fly speed: 1.50x", SkillPowerText.lines("marathon", 120, 120, settings).get(0));
         assertEquals("Place reach: +0.00", SkillPowerText.lines("builder", 1, 120, settings).get(0));
         assertEquals("Keep block: none", SkillPowerText.lines("builder", 1, 120, settings).get(1));
         assertEquals("Place reach: +1.00", SkillPowerText.lines("builder", 120, 120, settings).get(0));

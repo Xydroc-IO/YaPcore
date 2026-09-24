@@ -11,7 +11,7 @@ public final class HoloConfig {
     private double lineSpacing = 0.28;
     private double viewDistance = 48;
     private int refreshTicks = 10;
-    private String entity = "text_display";
+    private String entity = "armor_stand";
     private boolean placeholders = true;
     private int clickCooldownTicks = 5;
 
@@ -27,9 +27,9 @@ public final class HoloConfig {
         lineSpacing = Math.max(0.05, c.getDouble("line-spacing", 0.28));
         viewDistance = Math.max(8.0, c.getDouble("view-distance", 48.0));
         refreshTicks = Math.max(2, c.getInt("refresh-ticks", 10));
-        entity = c.getString("entity", "text_display");
+        entity = c.getString("entity", "armor_stand");
         if (entity == null || entity.isBlank()) {
-            entity = "text_display";
+            entity = "armor_stand";
         }
         placeholders = c.getBoolean("placeholders", true);
         clickCooldownTicks = Math.max(1, c.getInt("click-cooldown-ticks", 5));

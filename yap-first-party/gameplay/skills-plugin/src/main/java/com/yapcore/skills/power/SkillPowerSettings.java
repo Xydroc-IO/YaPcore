@@ -31,9 +31,9 @@ public record SkillPowerSettings(
         abilities = abilities == null ? SkillAbilitySettings.defaults() : abilities;
     }
 
-    /** Level 120: 3x mine/chop, 3x hits, 2x walk, +5 hearts, 2x brew, swim Depth-Strider-like + air. */
+    /** Level 120: 3x mine/chop, 3x hits, 1.5x walk, +5 hearts, 2x brew, swim Depth-Strider-like + air. */
     public static SkillPowerSettings defaults() {
-        return new SkillPowerSettings(true, 2.0, 2.0, 2.0, 1.0, 1.0, 0.25, 10.0, 1.0,
+        return new SkillPowerSettings(true, 2.0, 2.0, 2.0, 0.5, 1.0, 0.25, 10.0, 1.0,
                 1.0, 8.0, SkillAbilitySettings.defaults());
     }
 
@@ -46,7 +46,7 @@ public record SkillPowerSettings(
                 config.getDouble("power.break-speed-bonus-at-max", 2.0),
                 config.getDouble("power.extra-drops-at-max", 2.0),
                 config.getDouble("power.damage-bonus-at-max", 2.0),
-                config.getDouble("power.movement-speed-bonus-at-max", 1.0),
+                config.getDouble("power.movement-speed-bonus-at-max", 0.5),
                 config.getDouble("power.place-reach-bonus-at-max", 1.0),
                 config.getDouble("power.keep-block-chance-at-max", 0.25),
                 config.getDouble("power.extra-hearts-at-max", 10.0),
