@@ -2,8 +2,6 @@ package net.irisshaders.iris.mixin;
 
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
-import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
-import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -33,50 +31,42 @@ public class MixinMinecraft_PipelineManagement {
 		Iris.lastDimension = Iris.getCurrentDimension();
 	}
 
+	@Inject(method = "setLevel", at = @At("RETURN"))
+	private void iris$kickAfterSetLevel(ClientLevel clientLevel, CallbackInfo ci) {
+		// Covers portals / world switches that attach a level without a full Sodium setLevel race.
+		SodiumWorldKick.onLevelAttached(clientLevel);
+	}
+
 	/**
-	 * Injects before LevelRenderer receives the new level, or is notified of the level unload.
+	 * Injects before LevelExtractor / GameRenderer receive the new level.
 	 * <p>
-	 * We destroy any pipelines here to guard against potential memory leaks related to pipelines for
-	 * other dimensions never being unloaded.
+	 * Always destroy and re-prepare the Iris pipeline when a level attaches or
+	 * clears. Same-dimension joins used to reuse the title-screen pipeline
+	 * (often Vanilla while the pack was still loading, or an Iris pipeline whose
+	 * {@code initializedBlockIds} had already fired), so Sodium's
+	 * {@code initRenderer} on {@code LevelExtractor.setLevel} built meshes
+	 * against the wrong vertex format / missing block-ID maps. Opening Video
+	 * Settings later forced a Sodium {@code reload()} once Iris was ready —
+	 * join never did. Destroying here also bumps
+	 * {@code versionCounterForSodiumShaderReload}.
 	 * <p>
-	 * This injection point is needed so that we can reload the Iris shader pipeline before Sodium starts trying
-	 * to reload its world renderer. Otherwise, there will be inconsistent state since Sodium might initialize and
-	 * use the non-extended vertex format (since we do it based on whether the pipeline is available,
-	 * then Iris will switch on its pipeline, then code will assume that the extended vertex format
-	 * is used everywhere.
+	 * This must run before Sodium's {@code LevelExtractor.setLevel} RETURN
+	 * hook calls {@code SodiumWorldRenderer.setLevel} / {@code initRenderer}.
 	 * <p>
 	 * See: <a href="https://github.com/IrisShaders/Iris/issues/1330">Issue 1330</a>
 	 */
 	@Inject(method = "updateLevelInEngines", at = @At("HEAD"))
 	private void iris$resetPipeline(@Nullable ClientLevel level, CallbackInfo ci) {
-		boolean dimensionChanged = Iris.getCurrentDimension() != Iris.lastDimension;
-		// Title-screen preparePipeline often cached VanillaRenderingPipeline while
-		// currentPack was still null (DH). Joining the same dimension skips the
-		// destroy below and would reuse Vanilla forever even after the pack loads.
-		WorldRenderingPipeline cached = Iris.getPipelineManager().getPipelineNullable();
-		// Pack loaded but pipelinesPerDimension still holds title-screen Vanilla
-		// (same-dimension join never destroyed). Force IrisRenderingPipeline.
-		boolean staleVanilla = level != null
-			&& Iris.getCurrentPack().isPresent()
-			&& !(cached instanceof IrisRenderingPipeline);
+		Iris.logger.info("Reloading pipeline on level {}: {} => {}",
+			level == null ? "unload" : "attach",
+			Iris.lastDimension, Iris.getCurrentDimension());
+		Iris.getPipelineManager().destroyPipeline();
 
-		if (dimensionChanged || staleVanilla) {
-			Iris.logger.info("Reloading pipeline on {}: {} => {}",
-				dimensionChanged ? "dimension change" : "stale vanilla pipeline",
-				Iris.lastDimension, Iris.getCurrentDimension());
-			Iris.getPipelineManager().destroyPipeline();
-
-			// NB: We need create the pipeline immediately, so that it is ready by the time that Sodium starts trying to
-			// initialize its world renderer.
-			if (level != null) {
-				Iris.getPipelineManager().preparePipeline(Iris.getCurrentDimension());
-			}
-		}
+		// NB: Create the pipeline immediately so it is ready by the time Sodium
+		// initializes its world renderer (LevelExtractor.setLevel RETURN).
 		if (level != null) {
-			// Same refresh as opening Video Settings, after the level (and any
-			// pack reload that follows) has settled. Follow-up catches skins /
-			// block-ID maps that finish a moment later.
-			SodiumWorldKick.armWithFollowUp(8, 24);
+			Iris.getPipelineManager().preparePipeline(Iris.getCurrentDimension());
+			SodiumWorldKick.demandRefresh();
 		}
 	}
 }

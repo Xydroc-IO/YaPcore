@@ -14,6 +14,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.irisshaders.iris.compat.dh.DHCompat;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.irisshaders.iris.features.FeatureFlags;
 import net.irisshaders.iris.gl.GLDebug;
 import net.irisshaders.iris.gl.IrisRenderSystem;
@@ -873,12 +874,11 @@ public class IrisRenderingPipeline implements WorldRenderingPipeline, ShaderRend
 			WorldRenderingSettings.INSTANCE.setBlockStateIds(
 				BlockMaterialMapping.createBlockStateIdMap(pack.getIdMap().getBlockProperties(), pack.getIdMap().getTagEntries()));
 			WorldRenderingSettings.INSTANCE.setBlockTypeIds(BlockMaterialMapping.createBlockTypeMap(pack.getIdMap().getBlockRenderTypeMap()));
-			// setBlock*Ids raises reloadRequired. Never allChanged here — it runs
-			// inside LevelRenderer.render and leaves terrain/entities/skins blank.
-			// Arm SodiumWorldKick so the rebuild happens on a client tick *after*
-			// these ID maps exist (PipelineManager alone can race this frame).
+			// setBlock*Ids raises reloadRequired. Never allChanged / reload here —
+			// we are inside world rendering. preparePipeline does NOT re-run next
+			// frame, so arm the next client tick to rebuild with block-ID maps.
 			initializedBlockIds = true;
-			net.irisshaders.iris.compat.sodium.SodiumWorldKick.arm(1);
+			SodiumWorldKick.demandRefresh();
 		}
 
 		// Make sure we're using texture unit 0 for this.

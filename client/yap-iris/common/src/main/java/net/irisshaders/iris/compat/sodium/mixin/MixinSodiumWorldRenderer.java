@@ -10,12 +10,14 @@ import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import net.caffeinemc.mods.sodium.client.render.chunk.RenderSectionManager;
 import net.caffeinemc.mods.sodium.client.render.chunk.UniformBufferManager;
 import net.caffeinemc.mods.sodium.client.util.FogParameters;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.irisshaders.iris.mixinterface.ShadowRenderListAccess;
 import net.irisshaders.iris.mixin.LevelRendererAccessor;
 import net.irisshaders.iris.shadows.ShadowRenderer;
 import net.irisshaders.iris.shadows.ShadowRenderingState;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -148,6 +150,16 @@ public class MixinSodiumWorldRenderer implements ShadowRenderListAccess {
 			this.iris$regularCullMatrix = null;
 			this.iris$shadowScopeActive = false;
 		}
+	}
+
+	/**
+	 * Join path: after Sodium finishes {@code loadLevel}/{@code initRenderer},
+	 * force the Video Settings refresh window. Also queue an immediate
+	 * {@code execute} attempt so we do not wait a full tick if already ready.
+	 */
+	@Inject(method = "setLevel", at = @At("RETURN"), remap = false)
+	private void iris$kickAfterSodiumAttach(ClientLevel newLevel, CallbackInfo ci) {
+		SodiumWorldKick.onLevelAttached(newLevel);
 	}
 
 	@Inject(method = "scheduleTerrainUpdate", at = @At("HEAD"), cancellable = true, remap = false)

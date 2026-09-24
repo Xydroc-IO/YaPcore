@@ -6,6 +6,7 @@
     "AbstractClientPlayerMixin",
     "ClientPacketListenerMixin",
     "AvatarRendererMixin",
+    "ItemInHandLayerMixin",
     "LivingEntityRendererAccess",
     "LivingEntityRendererMixin",
     "LocalPlayerMovementMixin",

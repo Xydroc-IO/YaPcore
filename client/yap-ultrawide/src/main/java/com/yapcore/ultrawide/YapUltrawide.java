@@ -28,9 +28,9 @@ public final class YapUltrawide implements ClientModInitializer {
         config = UltrawideConfig.load();
         BandSettings u21 = config.ultrawide_21_9;
         BandSettings s32 = config.superwide_32_9;
-        LOGGER.info("YaP Ultrawide ready — 21:9[{} maxH={} scale={}] 32:9[{} maxH={} scale={} handExtra={}] hud={}",
-                u21.mode, u21.maxHorizontalFov, u21.fovScale,
-                s32.mode, s32.maxHorizontalFov, s32.fovScale, s32.viewmodelExtraScale,
+        LOGGER.info("YaP Ultrawide ready — 21:9[{} {}°] 32:9[{} {}°] hud={}",
+                u21.mode, u21.targetHorizontalFov,
+                s32.mode, s32.targetHorizontalFov,
                 config.affectHudFov);
     }
 
@@ -54,9 +54,6 @@ public final class YapUltrawide implements ClientModInitializer {
         paniniFrame = Panini.OFF;
         float applied = computeHorPlus(vanillaVerticalFov);
         lastAppliedVfov = applied;
-        if (lastHorPlusActive) {
-            paniniFrame = Panini.solve(applied, lastAspect, config.edgeCorrect);
-        }
         clearViewmodelAdjustments();
         return applied;
     }
@@ -163,11 +160,15 @@ public final class YapUltrawide implements ClientModInitializer {
 
         BandSettings bandCfg = cfg.forBand(band);
         float vfov;
+        if (bandCfg.ultrawideCamera()) {
+            // This panel's own camera. The Minecraft FOV slider is not read.
+            vfov = HorPlus.verticalForTargetHorizontal(bandCfg.targetHorizontalFov, aspect);
+            lastHorPlusActive = true;
+            return vfov;
+        }
         if (!bandCfg.match16x9() && !bandCfg.match21x9()) {
             vfov = HorPlus.verticalForTargetHorizontal(bandCfg.targetHorizontalFov, aspect);
         } else {
-            // Wide field from the slider. The edge pass compresses the sides
-            // so this stays straight while the view stays wide.
             vfov = HorPlus.verticalForTargetHorizontal(
                     HorPlus.comfortableHorizontal(vanillaVerticalFov), aspect);
         }

@@ -64,7 +64,9 @@ public abstract class LivingEntityRendererMixin<
             return;
         }
         boolean hasGeo = PresenceSkinStore.has(uuid.get())
-                && PresenceSkinStore.get(uuid.get()).map(s -> s.hasRenderableGeometry()).orElse(false);
+                && PresenceSkinStore.get(uuid.get())
+                        .map(PresenceGeometryLayer::shouldReplaceJavaModel)
+                        .orElse(false);
         Optional<PresenceEmoteStore.Active> emote = PresenceEmoteStore.get(uuid.get());
 
         if (emote.isPresent() && !hasGeo) {

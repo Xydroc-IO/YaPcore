@@ -97,7 +97,6 @@ public final class PaniniPass {
         }
         float scale = frame.widenScale();
         projection.m00(projection.m00() * scale);
-        projection.m11(projection.m11() * scale);
     }
 
     public static void apply(com.mojang.blaze3d.pipeline.RenderTarget main) {
@@ -140,12 +139,11 @@ public final class PaniniPass {
             ubo.rotate();
             if (!loggedActive) {
                 loggedActive = true;
-                double horizontal = Math.toDegrees(2.0 * Math.atan(frame.edge()));
+                double horizontal = Math.toDegrees(2.0 * Math.atan(frame.renderEdge()));
                 YapUltrawide.LOGGER.info(
-                        "Edge correction on ({}° across, d={} widen={})",
+                        "Side squeeze on ({}° across, widen={})",
                         String.format("%.0f", horizontal),
-                        frame.distance(),
-                        frame.renderEdge() / frame.edge());
+                        frame.distance());
             }
         } catch (RuntimeException e) {
             fail(e.toString());

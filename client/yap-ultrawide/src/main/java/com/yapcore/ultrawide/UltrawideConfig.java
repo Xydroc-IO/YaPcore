@@ -20,7 +20,7 @@ import java.nio.file.Path;
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bumped when defaults change in a way that should rewrite existing configs. */
-    private static final int CURRENT_VERSION = 14;
+    private static final int CURRENT_VERSION = 18;
 
     public int configVersion = 0;
     public boolean enabled = true;
@@ -256,6 +256,51 @@ public final class UltrawideConfig {
                 affectHudFov = false;
                 YapUltrawide.LOGGER.info(
                         "v14: wide slider field, edges compressed (hands stay vanilla)");
+            }
+            // v15: shrinking the vertical field made the panel feel zoomed.
+            // The slider is the vertical view again; the wide screen adds the sides.
+            if (configVersion < 15) {
+                edgeCorrect = 1.0f;
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v15: FOV slider is the vertical view; edges stay compressed");
+            }
+            // v16: the full-frame resample bent the world and waved the sky.
+            // Squeeze only the side strips. Leave vertical rows alone.
+            if (configVersion < 16) {
+                edgeCorrect = 1.0f;
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v16: center stays on the FOV slider; only the sides are squeezed");
+            }
+            // v17: the side resample bent straight walls. Normal FOV is a
+            // straight 105° view. The edge pass stays off.
+            if (configVersion < 17) {
+                edgeCorrect = 0.0f;
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v17: normal FOV is 105° across, straight perspective");
+            }
+            // v18: the video-settings FOV slider is no longer the ultrawide camera.
+            if (configVersion < 18) {
+                edgeCorrect = 0.0f;
+                affectHudFov = false;
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.mode = "ultrawide";
+                    ultrawide_21_9.targetHorizontalFov = 110.0f;
+                    ultrawide_21_9.maxHorizontalFov = 0.0f;
+                    ultrawide_21_9.fovScale = 1.0f;
+                    ultrawide_21_9.minVerticalFov = 0.0f;
+                }
+                if (superwide_32_9 != null) {
+                    superwide_32_9.mode = "ultrawide";
+                    superwide_32_9.targetHorizontalFov = 110.0f;
+                    superwide_32_9.maxHorizontalFov = 0.0f;
+                    superwide_32_9.fovScale = 1.0f;
+                    superwide_32_9.minVerticalFov = 0.0f;
+                }
+                YapUltrawide.LOGGER.info(
+                        "v18: ultrawide camera is 110° across. Video settings FOV does not move it.");
             }
             configVersion = CURRENT_VERSION;
         }

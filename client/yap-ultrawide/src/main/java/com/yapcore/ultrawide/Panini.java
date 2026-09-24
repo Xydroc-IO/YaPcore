@@ -18,10 +18,11 @@ public final class Panini {
     }
 
     /**
-     * @param verticalFovDegrees vertical FOV the slider produced (after Hor+)
+     * @param verticalFovDegrees vertical FOV from the slider. This stays the
+     *                           center of the view.
      * @param aspect             framebuffer width / height
-     * @param strength           0 = rectilinear, 1 = full edge correction. The
-     *                           center of the view stays on the FOV slider.
+     * @param strength           0 = rectilinear. 1 squeezes the side strips so
+     *                           they do not balloon. Vertical rows are not resampled.
      */
     public static Frame solve(float verticalFovDegrees, float aspect, float strength) {
         if (strength <= 0.01f || aspect < 1.2f || verticalFovDegrees <= 1.0f) {
@@ -30,21 +31,14 @@ public final class Panini {
         double halfV = Math.toRadians(verticalFovDegrees) * 0.5;
         double vert = Math.tan(halfV);
         double edge = vert * aspect;
-        if (edge < 0.25) {
+        if (edge < 0.45) {
             return OFF;
         }
-        // Highest distance that still fits in the widen budget. More distance
-        // squeezes the edges harder. The center scale stays on the slider.
-        double maxWiden = 1.2 + clamp01(strength);
-        double d = maxDistance(edge, maxWiden);
-        if (d < 0.02) {
-            return OFF;
-        }
-        double renderEdge = invert(edge, d);
-        if (!(renderEdge > edge)) {
-            return OFF;
-        }
-        return new Frame(true, (float) d, (float) edge, (float) renderEdge, (float) vert);
+        // How much extra horizontal view is rendered, then packed into the
+        // side strips. The center of the screen stays on the slider.
+        float widen = 1.45f + 0.45f * (float) clamp01(strength);
+        float squeezeStart = 0.42f;
+        return new Frame(true, widen, squeezeStart, (float) (edge * widen), (float) vert);
     }
 
     /** Forward map. {@code d == 0} returns {@code u}. */
@@ -115,17 +109,18 @@ public final class Panini {
     }
 
     /**
-     * @param edge       desired horizontal tangent (slider FOV, center scale)
-     * @param renderEdge wider tangent the world is rendered with
-     * @param vertEdge   desired vertical tangent
+     * @param distance     horizontal widen factor (1 = no extra width)
+     * @param edge         screen position where the side squeeze starts, 0–1
+     * @param renderEdge   widened horizontal tangent, for logging
+     * @param vertEdge     vertical tangent of the slider
      */
     public record Frame(boolean active, float distance, float edge, float renderEdge, float vertEdge) {
-        /** Multiply projection m00/m11 by this so the render frustum matches {@code renderEdge}. */
+        /** Multiply projection m00 by this. Vertical scale is left alone. */
         public float widenScale() {
-            if (!active || renderEdge <= 1.0e-4f) {
+            if (!active || distance <= 1.0f) {
                 return 1.0f;
             }
-            return edge / renderEdge;
+            return 1.0f / distance;
         }
     }
 }

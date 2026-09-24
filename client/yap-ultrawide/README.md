@@ -2,16 +2,15 @@
 
 Fabric **client** mod for Minecraft **26.2**. It does not go on YaPcore or Folia.
 
-On 21:9 and 32:9, vanilla’s vertical FOV slider becomes a fish-eye horizontal view.
-This mod applies **Hor+** with **separate profiles** for each panel class. 16:9 is
-unchanged. Spyglass / zoom FOVs pass through.
+On 21:9 and 32:9 the world uses its own camera. The Minecraft video-settings
+FOV slider does not change that view. 16:9 is unchanged. Spyglass / zoom FOVs
+pass through. Hands stay on the vanilla HUD camera, so the weapon stays in
+the corner.
 
-The FOV slider still widens and tightens the view. On 21:9 and 32:9 a normal
-slider position (70) is about 102° across, so the view stays wide. The edges
-are compressed after the world is drawn, which keeps the sides straight. Hands
-stay on the vanilla HUD camera, so the weapon stays in the corner. View-bob is
-scaled with the FOV change so the world does not slide under the crosshair
-while walking.
+The width is `targetHorizontalFov` in the config below. Both bands default to
+110° across, in a straight perspective. Raise that number to see more to the
+sides. Lower it when the sides stretch. View-bob is scaled with the camera
+so the world does not slide under the crosshair while walking.
 
 ## Install
 
@@ -30,13 +29,13 @@ cd client/yap-ultrawide && ./gradlew build
 
 ```json
 {
-  "configVersion": 14,
+  "configVersion": 18,
   "enabled": true,
   "affectHudFov": false,
-  "edgeCorrect": 1.0,
+  "edgeCorrect": 0.0,
   "ultrawide_21_9": {
-    "mode": "match_16_9",
-    "targetHorizontalFov": 100.0,
+    "mode": "ultrawide",
+    "targetHorizontalFov": 110.0,
     "maxHorizontalFov": 0.0,
     "fovScale": 1.0,
     "minVerticalFov": 0.0,
@@ -45,7 +44,7 @@ cd client/yap-ultrawide && ./gradlew build
     "viewmodelExtraScale": 1.0
   },
   "superwide_32_9": {
-    "mode": "match_21_9",
+    "mode": "ultrawide",
     "targetHorizontalFov": 110.0,
     "maxHorizontalFov": 0.0,
     "fovScale": 1.0,
@@ -67,15 +66,15 @@ cd client/yap-ultrawide && ./gradlew build
 | Key | Meaning |
 |-----|---------|
 | `affectHudFov` | Leave **false**. Hands keep the vanilla camera so the weapon stays in the corner. `true` puts Hor+ on the hand camera too |
-| `edgeCorrect` | **1** compresses the edges of the wide view. **0** leaves them rectilinear |
+| `edgeCorrect` | Leave **0**. The edge resample stays off |
 
 ### Per-band keys
 
 | Key | Meaning |
 |-----|---------|
-| `mode` | `match_16_9` · `match_21_9` · `fixed_hfov` |
-| `targetHorizontalFov` | Locked HFOV when mode is `fixed_hfov` |
-| `maxHorizontalFov` | Hard HFOV cap. **`0` = off** so the Minecraft FOV slider works |
+| `mode` | `ultrawide` (own camera) · `match_16_9` · `match_21_9` · `fixed_hfov` |
+| `targetHorizontalFov` | World width in degrees when mode is `ultrawide` or `fixed_hfov` |
+| `maxHorizontalFov` | Hard HFOV cap. **`0` = off** |
 | `fovScale` | Extra multiplier on vertical FOV. **`1.0`** leaves the slider alone |
 | `minVerticalFov` | Floor on vertical FOV. **`0` = off** so the slider is not clamped |
 | `viewmodelOffsetX` | Extra hand nudge (negative = left). Stacks on auto aspect offset |
@@ -84,7 +83,6 @@ cd client/yap-ultrawide && ./gradlew build
 
 ### 75" / dual-4K 32:9 tips
 
-Use `superwide_32_9` only (your panel is detected as that band). The FOV slider
-still changes the view. At 70 the picture is about 102° across, with the edges
-compressed so the sides stay straight. Raising the slider widens it toward
-115°. Lowering it tightens it toward 90°.
+Use `superwide_32_9` only (your panel is detected as that band). The world is
+`targetHorizontalFov` degrees across (110 by default). The video-settings FOV
+slider does not change it. Edit that number, then restart the client.

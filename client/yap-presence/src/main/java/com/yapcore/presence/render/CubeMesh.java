@@ -36,6 +36,7 @@ public final class CubeMesh {
         float py = bonePivot == null ? 0f : bonePivot[1];
         float pz = bonePivot == null ? 0f : bonePivot[2];
 
+        // Relative to bone pivot (Bedrock bone-local Y-up), ÷16 to blocks.
         float x0 = (ox - px - inflate) / 16f;
         float y0 = (oy - py - inflate) / 16f;
         float z0 = (oz - pz - inflate) / 16f;

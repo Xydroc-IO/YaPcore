@@ -3,6 +3,7 @@ package net.irisshaders.iris.pipeline;
 import com.mojang.blaze3d.opengl.GlStateManager;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
+import net.irisshaders.iris.compat.sodium.mixin.SodiumWorldRendererAccessor;
 import net.irisshaders.iris.gui.option.IrisVideoSettings;
 import net.irisshaders.iris.shaderpack.materialmap.NamespacedId;
 import net.irisshaders.iris.shaderpack.materialmap.WorldRenderingSettings;
@@ -60,13 +61,18 @@ public class PipelineManager {
 			return;
 		}
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.level == null || mc.levelExtractor == null) {
-			// Keep the flag — title-screen / pre-world prepare must not eat it.
+		net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer sodium =
+			net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer.instanceNullable();
+		// Need Minecraft.level, LevelExtractor, AND SodiumWorldRenderer.level.
+		// instanceNullable() is non-null before LevelExtractor.setLevel RETURN
+		// (the object lives on LevelRenderer); clearing reloadRequired there
+		// ate the rebuild when kickNow later no-op'd on a null sodium level.
+		if (mc.level == null || mc.levelExtractor == null || sodium == null
+			|| ((SodiumWorldRendererAccessor) (Object) sodium).iris$getLevel() == null) {
 			return;
 		}
-		// Clear only after a successful arm. arm() never drops requests now
-		// (queues through kickNow), so this is safe; bare allChanged is not enough
-		// without the Video Settings reset+invalidate that kickNow performs.
+		// Clear only after a successful arm. Silent VS finish retries at +2s/+5s
+		// if Sodium is not ready yet.
 		WorldRenderingSettings.INSTANCE.clearReloadRequired();
 		SodiumWorldKick.arm(2);
 	}

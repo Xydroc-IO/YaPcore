@@ -3,7 +3,7 @@
   "id": "yap-ultrawide",
   "version": "${version}",
   "name": "YaP Ultrawide",
-  "description": "Wide ultrawide view with straight edges for 21:9 and 32:9. Client-only; join YaPcore / Folia with Fabric.",
+  "description": "Ultrawide camera for 21:9 and 32:9. The world width is the mod config, not the video-settings FOV slider. Client-only.",
   "authors": [
     "YaP Labs"
   ],

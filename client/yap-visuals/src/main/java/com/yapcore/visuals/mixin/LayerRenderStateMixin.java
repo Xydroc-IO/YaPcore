@@ -1,7 +1,5 @@
 package com.yapcore.visuals.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.yapcore.visuals.HeldItemHang;
 import com.yapcore.visuals.rainbow.RainbowRenderState;
 import com.yapcore.visuals.rainbow.RainbowTint;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
@@ -33,14 +31,5 @@ public abstract class LayerRenderStateMixin {
             RainbowTint.tagQuads(this.quads);
             RainbowTint.clear();
         }
-    }
-
-    /**
-     * After vanilla display places the grip in the hand, tip the blade down.
-     * Changing {@code ItemTransform} rotation itself moves the grip onto the blade.
-     */
-    @Inject(method = "applyTransform", at = @At("RETURN"))
-    private void yap$hangAfterDisplay(PoseStack.Pose pose, CallbackInfo ci) {
-        HeldItemHang.applyPoseHang(pose);
     }
 }

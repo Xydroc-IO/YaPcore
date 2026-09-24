@@ -60,14 +60,14 @@ public final class HorPlus {
     }
 
     /**
-     * Wide horizontal field for the FOV slider. Edges are compressed after
-     * the world is drawn, so this width stays straight. Slider 30 → 90°,
-     * slider 70 → 102°, slider 110 → 115°.
+     * Straight rectilinear field for the FOV slider. Normal (70) is 105°
+     * across, wide enough for the panel without the edge bow. Slider 30 → 90°,
+     * slider 70 → 105°, slider 110 → 120°.
      */
     public static float comfortableHorizontal(float sliderVerticalDegrees) {
         float slider = Math.max(30.0f, Math.min(110.0f, sliderVerticalDegrees));
         float t = (slider - 30.0f) / 80.0f;
-        return 90.0f + t * 25.0f;
+        return 90.0f + t * 30.0f;
     }
 
     /** Clamp resulting VFOV so horizontal FOV never exceeds {@code maxHfov}. */

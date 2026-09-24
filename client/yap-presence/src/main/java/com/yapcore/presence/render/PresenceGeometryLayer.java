@@ -34,12 +34,27 @@ import java.util.UUID;
  *
  * <p>Persona attachments often live on bones that are not vanilla parts (hair, cape bones,
  * accessories). Those follow the parent chain until a mapped part is found.
+ *
+ * <p><b>Disabled:</b> Bedrock geo + Java {@code ItemInHandLayer} disagree on hand axes, so
+ * held items float and tip the wrong way. Avatars use the Java player model + skin PNG only
+ * until a single-space attach exists. Set {@link #RENDER_BEDROCK_GEOMETRY} to re-enable.
  */
 public final class PresenceGeometryLayer
         extends RenderLayer<AvatarRenderState, PlayerModel> {
 
+    /**
+     * When false, skip Bedrock cube drawing and keep the vanilla PlayerModel visible so
+     * third-person held items use stock Java hand attach.
+     */
+    public static final boolean RENDER_BEDROCK_GEOMETRY = false;
+
     public PresenceGeometryLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
         super(parent);
+    }
+
+    /** Whether this skin should replace the Java model with Bedrock cubes this frame. */
+    public static boolean shouldReplaceJavaModel(PresenceSkin skin) {
+        return RENDER_BEDROCK_GEOMETRY && skin != null && skin.hasRenderableGeometry();
     }
 
     @Override
@@ -50,6 +65,9 @@ public final class PresenceGeometryLayer
             AvatarRenderState state,
             float limbSwing,
             float limbSwingAmount) {
+        if (!RENDER_BEDROCK_GEOMETRY) {
+            return;
+        }
         if (state == null || state.isInvisible) {
             return;
         }
@@ -129,9 +147,33 @@ public final class PresenceGeometryLayer
             cur = byName.get(cur.parent().toLowerCase(Locale.ROOT));
         }
         ModelPart lastMapped = null;
+        boolean appliedRoot = false;
+        // Leaf bone decides hierarchy: limbs are root→limb in Java (not under body).
+        Bone leaf = path.bones.isEmpty() ? null : path.bones.get(path.bones.size() - 1);
+        ModelPart leafPart = leaf == null ? null : mapBone(model, leaf.name());
+        boolean limbLeaf = leafPart != null
+                && (leafPart == model.leftArm || leafPart == model.rightArm
+                || leafPart == model.leftLeg || leafPart == model.rightLeg);
+
         for (Bone b : path.bones) {
+            String n = b.name().toLowerCase(Locale.ROOT).replace("_", "").replace(" ", "");
+            if (n.equals("root") || n.equals("hip")) {
+                if (!appliedRoot) {
+                    model.root().translateAndRotate(poseStack);
+                    appliedRoot = true;
+                }
+                continue;
+            }
             ModelPart part = mapBone(model, b.name());
             if (part != null) {
+                // Arms/legs are siblings of body under root — skip body when drawing a limb.
+                if (limbLeaf && part == model.body) {
+                    continue;
+                }
+                if (!appliedRoot) {
+                    model.root().translateAndRotate(poseStack);
+                    appliedRoot = true;
+                }
                 if (part != lastMapped) {
                     part.translateAndRotate(poseStack);
                     lastMapped = part;
@@ -185,7 +227,9 @@ public final class PresenceGeometryLayer
         }
         return switch (n) {
             case "head", "hat", "helmet", "hair", "face", "cape", "leftface", "rightface" -> model.head;
-            case "body", "waist", "torso", "jacket", "chest", "hips", "belt", "root", "hip" -> model.body;
+            // Do not map "root"/"hip" → body: ItemInHandLayer uses root→arm, and mapping
+            // root to body double-parents arms under body so held items float off the cuff.
+            case "body", "waist", "torso", "jacket", "chest", "hips", "belt" -> model.body;
             case "leftarm", "armleft", "leftsleeve", "leftitem" -> model.leftArm;
             case "rightarm", "armright", "rightsleeve", "rightitem" -> model.rightArm;
             case "leftleg", "legleft", "leftpants", "leftboot" -> model.leftLeg;

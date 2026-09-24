@@ -5,12 +5,13 @@ package com.yapcore.ultrawide;
  */
 public final class BandSettings {
     /**
-     * {@code match_16_9} — same HFOV as 16:9 at the vanilla slider.
-     * {@code match_21_9} — same HFOV as 21:9 (tighter; good on 32:9).
-     * {@code fixed_hfov} — lock {@link #targetHorizontalFov}.
+     * {@code ultrawide} — this band's own camera. {@link #targetHorizontalFov}
+     * is the width. The Minecraft FOV slider is not used.
+     * {@code match_16_9} / {@code match_21_9} — old slider mapping.
+     * {@code fixed_hfov} — lock {@link #targetHorizontalFov}, no edge pass.
      */
-    public String mode = "match_16_9";
-    /** Used when {@code mode} is {@code fixed_hfov}. */
+    public String mode = "ultrawide";
+    /** Horizontal degrees of the ultrawide camera, or the lock for {@code fixed_hfov}. */
     public float targetHorizontalFov = 100.0f;
     /**
      * Hard cap on horizontal FOV after Hor+ (degrees). {@code 0} = no cap.
@@ -34,9 +35,8 @@ public final class BandSettings {
 
     public static BandSettings ultrawide21Defaults() {
         BandSettings s = new BandSettings();
-        // Slider in, same horizontal FOV a 16:9 panel would have. No cap, no floor.
-        s.mode = "match_16_9";
-        s.targetHorizontalFov = 100.0f;
+        s.mode = "ultrawide";
+        s.targetHorizontalFov = 110.0f;
         s.maxHorizontalFov = 0.0f;
         s.fovScale = 1.0f;
         s.minVerticalFov = 0.0f;
@@ -48,9 +48,7 @@ public final class BandSettings {
 
     public static BandSettings superwide32Defaults() {
         BandSettings s = new BandSettings();
-        // Same idea as 21:9, matched to a 21:9 panel so 32:9 is not telephoto.
-        // The Minecraft FOV slider still scales this. No cap.
-        s.mode = "match_21_9";
+        s.mode = "ultrawide";
         s.targetHorizontalFov = 110.0f;
         s.maxHorizontalFov = 0.0f;
         s.fovScale = 1.0f;
@@ -62,11 +60,11 @@ public final class BandSettings {
     }
 
     void normalize() {
-        if (mode == null || !(mode.equals("match_16_9") || mode.equals("match_21_9")
-                || mode.equals("fixed_hfov"))) {
-            mode = "match_16_9";
+        if (mode == null || !(mode.equals("ultrawide") || mode.equals("match_16_9")
+                || mode.equals("match_21_9") || mode.equals("fixed_hfov"))) {
+            mode = "ultrawide";
         }
-        targetHorizontalFov = clamp(targetHorizontalFov, 30.0f, 150.0f);
+        targetHorizontalFov = clamp(targetHorizontalFov, 70.0f, 150.0f);
         maxHorizontalFov = clamp(maxHorizontalFov, 0.0f, 160.0f);
         fovScale = clamp(fovScale, 0.70f, 1.15f);
         minVerticalFov = clamp(minVerticalFov, 0.0f, 90.0f);
@@ -85,5 +83,10 @@ public final class BandSettings {
 
     public boolean match21x9() {
         return "match_21_9".equals(mode);
+    }
+
+    /** Dedicated ultrawide camera. Ignores the Minecraft FOV slider. */
+    public boolean ultrawideCamera() {
+        return "ultrawide".equals(mode);
     }
 }

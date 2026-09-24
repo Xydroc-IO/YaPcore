@@ -5,7 +5,6 @@
   "client": [
     "ItemModelResolverMixin",
     "ItemStackRenderStateMixin",
-    "ItemInHandLayerMixin",
     "LayerRenderStateMixin",
     "ItemFeatureRendererMixin"
   ],

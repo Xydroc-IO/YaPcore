@@ -1,5 +1,6 @@
 package net.irisshaders.iris.compat.sodium.mixin;
 
+import net.caffeinemc.mods.sodium.client.config.ConfigManager;
 import net.caffeinemc.mods.sodium.client.config.structure.Config;
 import net.caffeinemc.mods.sodium.client.gui.VideoSettingsScreen;
 import net.irisshaders.iris.Iris;
@@ -17,6 +18,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * active in-world that full rebuild stacks on the same frame as menu open and
  * freezes the client. Defer the binding reset + first rebuild by one tick so
  * the screen can appear without a multi-second hitch.
+ *
+ * <p>Silent refresh ({@link SodiumWorldKick#isSilentRefresh()}) skips defer so
+ * stock {@code init()} runs exactly — and never re-arms demandRefresh.
  */
 @Mixin(VideoSettingsScreen.class)
 public abstract class MixinSodiumVideoSettingsScreen {
@@ -27,6 +31,10 @@ public abstract class MixinSodiumVideoSettingsScreen {
 
 	@Inject(method = "<init>(Lnet/minecraft/client/gui/screens/Screen;Lnet/caffeinemc/mods/sodium/client/config/structure/OptionPage;)V", at = @At("TAIL"))
 	private void iris$markDefer(CallbackInfo ci) {
+		if (SodiumWorldKick.isSilentRefresh()) {
+			iris$deferHeavyOpen = false;
+			return;
+		}
 		Minecraft mc = Minecraft.getInstance();
 		iris$deferHeavyOpen = Iris.isPackInUseQuick() && mc != null && mc.level != null;
 	}
@@ -39,8 +47,12 @@ public abstract class MixinSodiumVideoSettingsScreen {
 		)
 	)
 	private void iris$deferBindingReset(Config config) {
+		if (SodiumWorldKick.isSilentRefresh()) {
+			config.resetAllOptionsFromBindings();
+			return;
+		}
 		if (Iris.isPackInUseQuick() && Minecraft.getInstance().level != null) {
-			// Binding reset runs with the deferred first rebuild (see iris$deferFirstRebuild).
+			// Binding reset runs with the deferred first rebuild.
 			return;
 		}
 		config.resetAllOptionsFromBindings();
@@ -48,6 +60,9 @@ public abstract class MixinSodiumVideoSettingsScreen {
 
 	@Inject(method = "rebuild", at = @At("HEAD"), cancellable = true)
 	private void iris$deferFirstRebuild(CallbackInfo ci) {
+		if (SodiumWorldKick.isSilentRefresh()) {
+			return;
+		}
 		if (!iris$deferHeavyOpen || iris$openedDeferred) {
 			return;
 		}
@@ -58,10 +73,10 @@ public abstract class MixinSodiumVideoSettingsScreen {
 			if (Minecraft.getInstance().gui.screen() != self) {
 				return;
 			}
-			// kickNow = reset + invalidate + allChanged (Video Settings ctor+init
-			// plus mesh rebuild). init() after that rebuilds the UI only — stock
-			// init also invalidate()s again, which is harmless.
-			SodiumWorldKick.kickNow(Minecraft.getInstance());
+			// Stock finish only — no demandRefresh (that re-armed the spam window).
+			if (ConfigManager.CONFIG != null) {
+				ConfigManager.CONFIG.resetAllOptionsFromBindings();
+			}
 			self.init(self.width, self.height);
 		});
 	}

@@ -26,7 +26,8 @@
     "MixinSodiumGameOptions",
     "MixinSodiumVideoSettingsScreen",
     "MixinUniformData",
-    "MixinSodiumWorldRenderer"
+    "MixinSodiumWorldRenderer",
+    "SodiumWorldRendererAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
