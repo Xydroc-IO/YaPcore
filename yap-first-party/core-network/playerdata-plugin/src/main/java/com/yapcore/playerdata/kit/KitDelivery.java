@@ -64,19 +64,29 @@ public final class KitDelivery {
         if (!skipUses && def.maxUses() > 0 && uses >= def.maxUses()) {
             return new Result(Outcome.MAX_USES, 0, String.valueOf(def.maxUses()));
         }
+        boolean onCooldown = false;
+        long secsLeft = 0;
         if (!skipCooldown && last.isPresent() && def.delaySeconds() > 0) {
             Instant next = last.get().plusSeconds(def.delaySeconds());
             if (Instant.now().isBefore(next)) {
-                long secs = Duration.between(Instant.now(), next).getSeconds();
-                return new Result(Outcome.COOLDOWN, secs, CooldownFormat.formatSeconds(secs));
+                onCooldown = true;
+                secsLeft = Duration.between(Instant.now(), next).getSeconds();
             }
         }
-        if (!skipCost && def.cost() > 0 && config.economyEnabled()) {
-            double bal = balances.getBalance(player.getUniqueId());
-            if (bal < def.cost()) {
-                return new Result(Outcome.CANT_AFFORD, 0, String.format("%.2f", def.cost()));
+        if (!skipCost && config.economyEnabled()) {
+            double charge = onCooldown ? def.extraCost() : def.cost();
+            if (onCooldown && charge <= 0) {
+                return new Result(Outcome.COOLDOWN, secsLeft, CooldownFormat.formatSeconds(secsLeft));
             }
-            balances.setBalance(player.getUniqueId(), bal - def.cost());
+            if (charge > 0) {
+                double bal = balances.getBalance(player.getUniqueId());
+                if (bal < charge) {
+                    return new Result(Outcome.CANT_AFFORD, 0, String.format("%.2f", charge));
+                }
+                balances.setBalance(player.getUniqueId(), bal - charge);
+            }
+        } else if (onCooldown) {
+            return new Result(Outcome.COOLDOWN, secsLeft, CooldownFormat.formatSeconds(secsLeft));
         }
         giveContents(player, def);
         runCommands(player, def);

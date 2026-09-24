@@ -41,6 +41,7 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
                         yield true;
                     }
                     if (sender instanceof Player player) {
+                        menus.markOpenedStandalone(player);
                         menus.openWarps(player);
                     } else {
                         list(sender);

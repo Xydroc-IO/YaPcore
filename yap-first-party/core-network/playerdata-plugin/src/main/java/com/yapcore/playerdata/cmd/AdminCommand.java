@@ -3,6 +3,7 @@ package com.yapcore.playerdata.cmd;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.db.Database;
+import com.yapcore.playerdata.db.ProfileRecovery;
 import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
@@ -13,13 +14,15 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.stream.Stream;
 
 /**
- * /yapdata reload|status|save|unlock
+ * /yapdata reload|status|save|unlock|recoverprofile
  */
 public final class AdminCommand implements CommandExecutor, TabCompleter {
 
@@ -46,7 +49,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 0) {
             com.yapcore.messages.YapHelp.simple(sender, "YaPPlayerData",
-                    "/yapdata <reload|status|save|unlock>");
+                    "/yapdata <reload|status|save|unlock|recoverprofile>");
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -100,7 +103,53 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage("§cFailed: " + e.getMessage());
                 }
             }
-            default -> sender.sendMessage("Usage: /yapdata <reload|status|save|unlock>");
+            case "recoverprofile" -> {
+                if (args.length < 2) {
+                    sender.sendMessage("Usage: /yapdata recoverprofile <fromProfile> [player|*]");
+                    sender.sendMessage("§7Merges items from an old profile (e.g. lobby) into §f"
+                            + config.inventoryProfile()
+                            + "§7 — fills empty slots only; source kept as backup.");
+                    return true;
+                }
+                String from = args[1].trim();
+                String to = config.inventoryProfile();
+                String who = args.length >= 3 ? args[2].trim() : "*";
+                Bukkit.getAsyncScheduler().runNow(plugin, task -> {
+                    try {
+                        ProfileRecovery recovery = new ProfileRecovery(database, plugin.getLogger());
+                        String msg;
+                        if ("*".equals(who) || "all".equalsIgnoreCase(who)) {
+                            var result = recovery.mergeAll(from, to);
+                            msg = "§aRecovered §f" + from + " §a→ §f" + to
+                                    + "§a: players=" + result.players()
+                                    + " inv=" + result.inventoriessMerged()
+                                    + " ender=" + result.endersMerged()
+                                    + " bagPages=" + result.bagPagesMerged()
+                                    + " items=" + result.itemsMoved()
+                                    + "§7 — rejoin to reload.";
+                        } else {
+                            UUID uuid = resolveUuid(who);
+                            if (uuid == null) {
+                                msg = "§cUnknown player (must be online, or pass UUID).";
+                            } else {
+                                var one = recovery.mergeOne(uuid, from, to);
+                                msg = "§aRecovered §f" + who + "§a: inv=" + one.inventoryTouched()
+                                        + " ender=" + one.enderTouched()
+                                        + " bagPages=" + one.bagPages()
+                                        + " items=" + one.itemsMoved()
+                                        + "§7 — rejoin to reload.";
+                            }
+                        }
+                        String finalMsg = msg;
+                        Bukkit.getGlobalRegionScheduler().run(plugin, t -> sender.sendMessage(finalMsg));
+                    } catch (Exception e) {
+                        Bukkit.getGlobalRegionScheduler().run(plugin, t ->
+                                sender.sendMessage("§cRecover failed: " + e.getMessage()));
+                        plugin.getLogger().log(Level.SEVERE, "recoverprofile failed", e);
+                    }
+                });
+            }
+            default -> sender.sendMessage("Usage: /yapdata <reload|status|save|unlock|recoverprofile>");
         }
         return true;
     }
@@ -111,14 +160,22 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
         } catch (IllegalArgumentException ignored) {
         }
         Player p = Bukkit.getPlayerExact(arg);
-        return p != null ? p.getUniqueId() : null;
+        if (p != null) {
+            return p.getUniqueId();
+        }
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (online.getName().equalsIgnoreCase(arg)) {
+                return online.getUniqueId();
+            }
+        }
+        return null;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String p = args[0].toLowerCase(Locale.ROOT);
-            return Stream.of("reload", "status", "save", "unlock")
+            return Stream.of("reload", "status", "save", "unlock", "recoverprofile")
                     .filter(s -> s.startsWith(p))
                     .toList();
         }
@@ -128,6 +185,24 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                     .map(Player::getName)
                     .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(p))
                     .toList();
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("recoverprofile")) {
+            String p = args[1].toLowerCase(Locale.ROOT);
+            return Stream.of("lobby", "creative", "survival", "factions")
+                    .filter(s -> s.startsWith(p))
+                    .toList();
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("recoverprofile")) {
+            String p = args[2].toLowerCase(Locale.ROOT);
+            List<String> names = new ArrayList<>();
+            if ("*".startsWith(p)) {
+                names.add("*");
+            }
+            Bukkit.getOnlinePlayers().stream()
+                    .map(Player::getName)
+                    .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(p))
+                    .forEach(names::add);
+            return names;
         }
         return List.of();
     }

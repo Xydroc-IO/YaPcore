@@ -10,6 +10,7 @@ public record KitDef(
         long delaySeconds,
         int maxUses,
         double cost,
+        double extraCost,
         boolean firstJoin,
         List<ItemStack> items,
         ItemStack helmet,
@@ -45,11 +46,11 @@ public record KitDef(
     }
 
     public ItemStack iconStack() {
-        if (!items.isEmpty() && items.get(0) != null) {
-            return items.get(0);
-        }
         if (chestplate != null) {
             return chestplate;
+        }
+        if (!items.isEmpty() && items.get(0) != null) {
+            return items.get(0);
         }
         if (helmet != null) {
             return helmet;
@@ -59,5 +60,10 @@ public record KitDef(
 
     public boolean oneTime() {
         return maxUses == 1;
+    }
+
+    /** True when a paid claim is allowed while the free/cooldown window is still open. */
+    public boolean hasExtraCost() {
+        return extraCost > 0;
     }
 }

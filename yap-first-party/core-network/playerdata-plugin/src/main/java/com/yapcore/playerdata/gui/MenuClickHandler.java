@@ -36,8 +36,11 @@ final class MenuClickHandler {
                 case KITS -> kitsClick(player, slot, shift, name);
                 case KIT_PREVIEW -> kitPreviewClick(player, slot, name);
                 case JOBS -> jobsClick(player, slot, name);
-                case AUCTIONS -> auctionsClick(player, slot, name);
-                case MAIL -> mailClick(player, name);
+                case AUCTIONS -> menus.auctionMenus.handleBrowse(player, slot, name);
+                case AUCTIONS_SELL -> menus.auctionMenus.handleSell(player, slot, name);
+                case AUCTIONS_MINE -> menus.auctionMenus.handleMine(player, slot, name);
+                case MAIL -> menus.mailMenus.handleInbox(player, slot, name);
+                case MAIL_SEND -> menus.mailMenus.handleCompose(player, slot, name);
                 case NPC_TRADER, NPC_TRADER_QTY -> {
                     // routed via NpcTraderService from MenuListener
                     yield false;
@@ -62,24 +65,28 @@ final class MenuClickHandler {
             }
             case "Homes" -> {
                 if (menus.config.featureHomes()) {
+                    menus.markOpenedFromHub(player);
                     menus.openHomes(player);
                 }
                 yield true;
             }
             case "Warps" -> {
                 if (menus.config.featureWarps()) {
+                    menus.markOpenedFromHub(player);
                     menus.openWarps(player);
                 }
                 yield true;
             }
             case "Kits" -> {
                 if (menus.config.featureKits()) {
+                    menus.markOpenedFromHub(player);
                     menus.openKits(player);
                 }
                 yield true;
             }
             case "Jobs" -> {
                 if (menus.config.featureJobs()) {
+                    menus.markOpenedFromHub(player);
                     menus.openJobs(player);
                 }
                 yield true;
@@ -91,12 +98,14 @@ final class MenuClickHandler {
             }
             case "Auctions" -> {
                 if (menus.config.featureAuctions()) {
+                    menus.markOpenedFromHub(player);
                     menus.openAuctions(player);
                 }
                 yield true;
             }
             case "Mail" -> {
                 if (menus.config.featureMail()) {
+                    menus.markOpenedFromHub(player);
                     menus.openMail(player);
                 }
                 yield true;
@@ -121,9 +130,13 @@ final class MenuClickHandler {
         };
     }
 
+    /** Shared footer: Back → YaP Menu when opened from hub; Close dismisses NPC/command GUIs. */
+    boolean navBackOrClose(Player player, String name) {
+        return menus.navBackOrClose(player, name);
+    }
+
     boolean homesClick(Player player, int slot, boolean shift, String name) throws Exception {
-        if ("Back".equals(name)) {
-            menus.openHub(player);
+        if (navBackOrClose(player, name)) {
             return true;
         }
         Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
@@ -146,8 +159,7 @@ final class MenuClickHandler {
     }
 
     boolean warpsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            menus.openHub(player);
+        if (navBackOrClose(player, name)) {
             return true;
         }
         Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
@@ -164,8 +176,7 @@ final class MenuClickHandler {
     }
 
     boolean kitsClick(Player player, int slot, boolean shift, String name) throws Exception {
-        if ("Back".equals(name)) {
-            menus.openHub(player);
+        if (navBackOrClose(player, name)) {
             return true;
         }
         Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
@@ -173,8 +184,12 @@ final class MenuClickHandler {
         if (kit == null) {
             return true;
         }
-        if (shift) {
+        if (shift || name != null && name.contains("[LOCKED]")) {
             menus.openKitPreview(player, kit);
+            return true;
+        }
+        if (!Perms.hasKit(player, kit)) {
+            player.sendMessage("§cThat kit is locked for your rank. Shift-click to preview.");
             return true;
         }
         player.closeInventory();
@@ -190,17 +205,21 @@ final class MenuClickHandler {
         if ("Claim".equals(name)) {
             Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
             String kit = meta.get(53);
-            player.closeInventory();
-            if (kit != null) {
-                player.performCommand("kit " + kit);
+            if (kit == null) {
+                return true;
             }
+            if (!Perms.hasKit(player, kit)) {
+                player.sendMessage("§cThat kit is locked for your rank.");
+                return true;
+            }
+            player.closeInventory();
+            player.performCommand("kit " + kit);
         }
         return true;
     }
 
     boolean jobsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            menus.openHub(player);
+        if (navBackOrClose(player, name)) {
             return true;
         }
         Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
@@ -221,40 +240,6 @@ final class MenuClickHandler {
             player.sendMessage("§aLeft §f" + action.substring(6));
         }
         menus.openJobs(player);
-        return true;
-    }
-
-    boolean auctionsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            menus.openHub(player);
-            return true;
-        }
-        if (name.startsWith("Sell")) {
-            player.closeInventory();
-            player.sendMessage("§7Hold an item and use §f/ah sell <price>");
-            return true;
-        }
-        Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String action = meta.get(slot);
-        if (action == null || !action.startsWith("buy:")) {
-            return true;
-        }
-        long id = Long.parseLong(action.substring(4));
-        player.closeInventory();
-        player.performCommand("ah buy " + id);
-        return true;
-    }
-
-    boolean mailClick(Player player, String name) throws Exception {
-        if ("Back".equals(name)) {
-            menus.openHub(player);
-            return true;
-        }
-        if ("Clear all".equals(name)) {
-            menus.mail.clear(player.getUniqueId());
-            player.sendMessage("§aMail cleared.");
-            menus.openMail(player);
-        }
         return true;
     }
 

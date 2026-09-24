@@ -89,6 +89,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 1) {
+            menus.markOpenedStandalone(player);
             menus.openKits(player);
             return true;
         }
@@ -103,6 +104,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.kit")) {
             return true;
         }
+        menus.markOpenedStandalone(player);
         menus.openKits(player);
         return true;
     }
@@ -220,7 +222,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
                 items.add(stack.clone());
             }
         }
-        KitDef def = new KitDef(id, delay, 0, 0, false, items,
+        KitDef def = new KitDef(id, delay, 0, 0, 0, false, items,
                 cloneOrNull(inv.getHelmet()), cloneOrNull(inv.getChestplate()),
                 cloneOrNull(inv.getLeggings()), cloneOrNull(inv.getBoots()),
                 cloneOrNull(inv.getItemInOffHand()), List.of());
@@ -265,10 +267,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         String id = args[0].toLowerCase(Locale.ROOT);
-        if (!Perms.hasKit(player, id) && !isKitAdmin(player)) {
-            YapMessages.noPermission(player);
-            return true;
-        }
+        // Preview is allowed for locked kits so the kits NPC can show rank gear.
         menus.openKitPreview(player, id);
         return true;
     }
@@ -307,8 +306,19 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
             switch (result.outcome()) {
                 case OK -> player.sendMessage("§aClaimed kit §f" + id);
                 case UNKNOWN -> player.sendMessage("§cUnknown kit.");
-                case NO_PERM -> YapMessages.noPermission(player);
-                case COOLDOWN -> player.sendMessage("§cKit on cooldown (" + result.detail() + " left).");
+                case NO_PERM -> {
+                    player.sendMessage("§cThat kit is locked for your rank.");
+                    YapMessages.noPermission(player);
+                }
+                case COOLDOWN -> {
+                    KitDef def = config.kits().get(id);
+                    if (def != null && def.hasExtraCost()) {
+                        player.sendMessage("§cKit on cooldown (" + result.detail() + " left)."
+                                + " §7Buy again for §f$" + String.format("%.2f", def.extraCost()));
+                    } else {
+                        player.sendMessage("§cKit on cooldown (" + result.detail() + " left).");
+                    }
+                }
                 case MAX_USES -> player.sendMessage("§cKit used up (max " + result.detail() + ").");
                 case CANT_AFFORD -> player.sendMessage("§cThat kit costs §f$" + result.detail());
                 case NOT_READY -> com.yapcore.messages.YapMessages.profileLoading(player);

@@ -1,13 +1,16 @@
 package com.yapcore.playerdata.gui;
 
 import com.yapcore.playerdata.npc.NpcTraderService;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 public final class MenuListener implements Listener {
@@ -81,5 +84,20 @@ public final class MenuListener implements Listener {
                 traders.clearClicks(player);
             }
         }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onComposeChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        String raw = PlainTextComponentSerializer.plainText().serialize(event.message());
+        if (menus.mailMenus.handleChat(player, raw) || menus.auctionMenus.handleChat(player, raw)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        menus.mailMenus.clearPending(event.getPlayer());
+        menus.auctionMenus.clearPending(event.getPlayer());
     }
 }

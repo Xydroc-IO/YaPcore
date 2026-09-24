@@ -62,6 +62,26 @@ public final class AuctionRepository {
         return out;
     }
 
+    public List<Listing> listBySeller(UUID seller, int limit) throws SQLException {
+        List<Listing> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT id, seller_uuid, seller_name, price, item_blob, created_at, expires_at
+                     FROM auctions WHERE seller_uuid = ? AND expires_at > ?
+                     ORDER BY id DESC LIMIT ?
+                     """)) {
+            ps.setString(1, seller.toString());
+            ps.setTimestamp(2, Timestamp.from(Instant.now()));
+            ps.setInt(3, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(map(rs));
+                }
+            }
+        }
+        return out;
+    }
+
     public Optional<Listing> get(long id) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""

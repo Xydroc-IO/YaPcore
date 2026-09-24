@@ -45,12 +45,14 @@ public final class MailCommands implements CommandExecutor, TabCompleter {
         }
         try {
             if (args.length == 0) {
+                menus.markOpenedStandalone(player);
                 menus.openMail(player);
                 return true;
             }
             String sub = args[0].toLowerCase(Locale.ROOT);
             return switch (sub) {
                 case "read", "list", "gui" -> {
+                    menus.markOpenedStandalone(player);
                     menus.openMail(player);
                     yield true;
                 }

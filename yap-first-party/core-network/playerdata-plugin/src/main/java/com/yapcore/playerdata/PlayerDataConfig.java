@@ -149,12 +149,22 @@ public final class PlayerDataConfig {
 
     /**
      * Prefer shared {@code kits.yml} (copy identically to Hub + survival).
-     * Optional {@code kits:} in config.yml still merge on top for local overrides.
+     * Jar defaults load first; on-disk kits.yml overrides same ids and can add custom kits.
+     * Missing premade kits from an old disk file are filled from the jar. Optional
+     * {@code kits:} in config.yml still merge last for local overrides.
      */
     private Map<String, KitDef> loadAllKits(FileConfiguration config) {
         plugin.saveResource("kits.yml", false);
-        File kitsFile = new File(plugin.getDataFolder(), "kits.yml");
         Map<String, KitDef> merged = new LinkedHashMap<>();
+        try (java.io.InputStream in = plugin.getResource("kits.yml")) {
+            if (in != null) {
+                FileConfiguration jar = YamlConfiguration.loadConfiguration(
+                        new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8));
+                merged.putAll(KitYaml.load(jar.getConfigurationSection("kits")));
+            }
+        } catch (java.io.IOException ignored) {
+        }
+        File kitsFile = new File(plugin.getDataFolder(), "kits.yml");
         if (kitsFile.isFile()) {
             FileConfiguration kitsYml = YamlConfiguration.loadConfiguration(kitsFile);
             merged.putAll(KitYaml.load(kitsYml.getConfigurationSection("kits")));

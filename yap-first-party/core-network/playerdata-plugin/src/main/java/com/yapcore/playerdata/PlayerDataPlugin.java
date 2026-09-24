@@ -102,6 +102,20 @@ public final class PlayerDataPlugin extends JavaPlugin {
         } catch (Exception e) {
             getLogger().warning("Could not clear startup session locks: " + e.getMessage());
         }
+        // One-shot: if this backend shares global, pull orphan hub (lobby) gear/bags into it.
+        if ("global".equalsIgnoreCase(config.inventoryProfile())) {
+            try {
+                var recovered = new com.yapcore.playerdata.db.ProfileRecovery(database, getLogger())
+                        .mergeAll("lobby", "global");
+                if (recovered.itemsMoved() > 0 || recovered.bagPagesMerged() > 0
+                        || recovered.inventoriessMerged() > 0) {
+                    getLogger().info("Merged orphan lobby profile → global (items="
+                            + recovered.itemsMoved() + ", bagPages=" + recovered.bagPagesMerged() + ")");
+                }
+            } catch (Exception e) {
+                getLogger().warning("Lobby→global profile recovery skipped: " + e.getMessage());
+            }
+        }
         SessionLock locks = new SessionLock(repository, config);
         sync = new SyncService(this, config, repository, locks);
 

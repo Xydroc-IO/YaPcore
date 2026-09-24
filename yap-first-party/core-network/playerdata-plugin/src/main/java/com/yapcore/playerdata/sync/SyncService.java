@@ -152,7 +152,8 @@ public final class SyncService {
                             player.sendMessage("§7Synced profile §f" + config.inventoryProfile()
                                     + " §7· balance §a$" + String.format("%.2f", record.balance()));
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
+                        // Errors (e.g. NoClassDefFoundError after hot jar swap) must not leave the player frozen.
                         plugin.getLogger().log(Level.SEVERE, "Failed to apply data for " + name, e);
                         player.kick(net.kyori.adventure.text.Component.text(
                                 "Failed to load your synced data. Contact staff."));
@@ -161,7 +162,8 @@ public final class SyncService {
                         loading.remove(uuid);
                     }
                 });
-            } catch (Exception e) {
+            } catch (Throwable e) {
+                // Catch Error too — Exception-only left players permanently frozen on classloader failures.
                 plugin.getLogger().log(Level.SEVERE, "Failed to load data for " + name, e);
                 YapSched.entity(plugin, player, () -> {
                     if (player.isOnline()) {

@@ -44,6 +44,7 @@ public final class KitYaml {
         long delay = ks.getLong("delay-seconds", ks.getLong("delay", 86400));
         int maxUses = ks.getInt("max-uses", ks.getInt("maxuses", 0));
         double cost = ks.getDouble("cost", 0);
+        double extraCost = ks.getDouble("extra-cost", ks.getDouble("paid-cost", 0));
         boolean firstJoin = ks.getBoolean("first-join", ks.getBoolean("kit-on-join", false));
         List<String> commands = ks.getStringList("commands");
 
@@ -71,7 +72,8 @@ public final class KitYaml {
                 }
             }
         }
-        return new KitDef(id, delay, maxUses, cost, firstJoin, items, helmet, chest, legs, boots, offhand, commands);
+        return new KitDef(id, delay, maxUses, cost, extraCost, firstJoin, items,
+                helmet, chest, legs, boots, offhand, commands);
     }
 
     public static void saveKit(JavaPlugin plugin, KitDef def) throws IOException {
@@ -82,6 +84,7 @@ public final class KitYaml {
         yaml.set(base + ".delay-seconds", def.delaySeconds());
         yaml.set(base + ".max-uses", def.maxUses());
         yaml.set(base + ".cost", def.cost());
+        yaml.set(base + ".extra-cost", def.extraCost());
         yaml.set(base + ".first-join", def.firstJoin());
         yaml.set(base + ".commands", def.commands());
         yaml.set(base + ".items", def.items());

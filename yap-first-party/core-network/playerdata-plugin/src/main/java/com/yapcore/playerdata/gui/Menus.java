@@ -14,7 +14,6 @@ import com.yapcore.playerdata.db.LocationRow;
 import com.yapcore.playerdata.db.MailRepository;
 import com.yapcore.playerdata.db.WarpsRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
-import com.yapcore.playerdata.sync.ItemSerializer;
 import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.playerdata.util.Teleports;
 import net.kyori.adventure.text.Component;
@@ -25,9 +24,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -48,7 +50,9 @@ public final class Menus {
     BackpackService backpack;
 
     /** slot → auction id / home name / etc for click routing */
-    final Map<java.util.UUID, Map<Integer, String>> clickMeta = new HashMap<>();
+    final Map<UUID, Map<Integer, String>> clickMeta = new HashMap<>();
+    /** When true, feature GUI Back returns to YaP Menu; false = NPC/command → Close. */
+    private final Map<UUID, Boolean> openedFromHub = new ConcurrentHashMap<>();
 
     public Menus(PlayerDataPlugin plugin, PlayerDataConfig config, SyncService sync,
                  BalanceStore balances, HomesRepository homes, WarpsRepository warps,
@@ -69,6 +73,38 @@ public final class Menus {
     public void bindBackpack(BackpackService backpack) {
         this.backpack = backpack;
     }
+
+    /** Next feature GUI was opened from YaP Menu (Back returns to hub). */
+    public void markOpenedFromHub(Player player) {
+        openedFromHub.put(player.getUniqueId(), true);
+    }
+
+    /** Next feature GUI was opened from NPC or /command (footer is Close). */
+    public void markOpenedStandalone(Player player) {
+        openedFromHub.put(player.getUniqueId(), false);
+    }
+
+    public boolean openedFromHub(Player player) {
+        return Boolean.TRUE.equals(openedFromHub.get(player.getUniqueId()));
+    }
+
+    void placeNavButton(Inventory inv, int slot, Player player) {
+        // Feature GUIs (kits/AH/mail/…) never link back to YaP Menu — NPC shops included.
+        // Hub is only reachable via /menu.
+        inv.setItem(slot, YapMenuHolder.icon(Material.BARRIER, NamedTextColor.RED, "Close"));
+    }
+
+    /** Close always dismisses. Never opens YaP Menu from feature GUIs. */
+    boolean navBackOrClose(Player player, String name) {
+        if ("Back".equals(name) || "Close".equals(name)) {
+            player.closeInventory();
+            return true;
+        }
+        return false;
+    }
+
+    final AuctionMenus auctionMenus = new AuctionMenus(this);
+    final MailMenus mailMenus = new MailMenus(this);
 
     public void openHub(Player player) {
         if (!Perms.require(player, "yapdata.menu")) {
@@ -170,7 +206,7 @@ public final class Menus {
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "homes gui", e);
         }
-        inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
+        placeNavButton(inv, 49, player);
         clickMeta.put(player.getUniqueId(), meta);
         player.openInventory(inv);
     }
@@ -208,7 +244,7 @@ public final class Menus {
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "warps gui", e);
         }
-        inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
+        placeNavButton(inv, 49, player);
         clickMeta.put(player.getUniqueId(), meta);
         player.openInventory(inv);
     }
@@ -225,23 +261,23 @@ public final class Menus {
 
     public void openKitsInventory(Player player) {
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.KITS);
-        Inventory inv = Bukkit.createInventory(holder, 45, Component.text("Kits", NamedTextColor.YELLOW));
+        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Kits", NamedTextColor.YELLOW));
         holder.bind(inv);
         YapMenuHolder.fillBorder(inv);
         Map<Integer, String> meta = new HashMap<>();
         int slot = 10;
         for (var entry : config.kits().entrySet()) {
-            if (!Perms.hasKit(player, entry.getKey())) {
-                continue;
-            }
             while (slot % 9 == 0 || slot % 9 == 8) {
                 slot++;
             }
-            if (slot >= 35) {
+            if (slot >= 44) {
                 break;
             }
             KitDef def = entry.getValue();
-            Material icon = def.iconStack() != null ? def.iconStack().getType() : Material.CHEST;
+            boolean unlocked = Perms.hasKit(player, entry.getKey());
+            Material icon = unlocked
+                    ? (def.iconStack() != null ? def.iconStack().getType() : Material.CHEST)
+                    : Material.BARRIER;
             String remain = "Ready";
             String uses = def.maxUses() > 0 ? "Uses left: ?" : "Unlimited uses";
             try {
@@ -251,6 +287,9 @@ public final class Menus {
                             last.get().plusSeconds(def.delaySeconds())).getSeconds();
                     if (secs > 0) {
                         remain = "Cooldown: " + CooldownFormat.formatSeconds(secs);
+                        if (unlocked && def.hasExtraCost()) {
+                            remain += " · buy $" + String.format("%.0f", def.extraCost());
+                        }
                     }
                 }
                 int used = kits.uses(player.getUniqueId(), def.id());
@@ -259,14 +298,29 @@ public final class Menus {
                 }
             } catch (Exception ignored) {
             }
-            String cost = def.cost() > 0 ? "Cost: $" + String.format("%.2f", def.cost()) : "Free";
-            inv.setItem(slot, YapMenuHolder.icon(icon, entry.getKey(),
-                    remain, uses, cost, "Items: " + def.itemCount(),
-                    "Click to claim · Shift: preview"));
+            String cost = def.cost() > 0 ? "Cost: $" + String.format("%.2f", def.cost())
+                    : (def.delaySeconds() > 0 ? "Free (" + CooldownFormat.formatSeconds(def.delaySeconds()) + " CD)" : "Free");
+            if (def.hasExtraCost()) {
+                cost += " · Extra: $" + String.format("%.2f", def.extraCost());
+            }
+            NamedTextColor color = unlocked ? NamedTextColor.YELLOW : NamedTextColor.DARK_GRAY;
+            String title = unlocked ? entry.getKey() : entry.getKey() + " [LOCKED]";
+            List<String> lore = new ArrayList<>();
+            if (!unlocked) {
+                lore.add("Requires rank for yapdata.kit." + entry.getKey());
+                lore.add("Shift-click to preview");
+            } else {
+                lore.add(remain);
+                lore.add(uses);
+                lore.add(cost);
+                lore.add("Items: " + def.itemCount());
+                lore.add("Click to claim · Shift: preview");
+            }
+            inv.setItem(slot, YapMenuHolder.icon(icon, color, title, lore.toArray(String[]::new)));
             meta.put(slot, entry.getKey());
             slot++;
         }
-        inv.setItem(40, YapMenuHolder.icon(Material.ARROW, "Back"));
+        placeNavButton(inv, 49, player);
         clickMeta.put(player.getUniqueId(), meta);
         player.openInventory(inv);
     }
@@ -306,10 +360,27 @@ public final class Menus {
         }
         inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(53, YapMenuHolder.icon(Material.CHEST, NamedTextColor.GREEN, "Claim",
-                def.cost() > 0 ? "Cost: $" + String.format("%.2f", def.cost()) : "Free",
-                "Delay: " + def.delaySeconds() + "s"));
+                unlockedClaimLore(player, def)));
         clickMeta.put(player.getUniqueId(), java.util.Map.of(53, def.id()));
         player.openInventory(inv);
+    }
+
+    private static String[] unlockedClaimLore(Player player, KitDef def) {
+        boolean unlocked = Perms.hasKit(player, def.id());
+        if (!unlocked) {
+            return new String[]{
+                    "Locked for your rank",
+                    "Needs yapdata.kit." + def.id(),
+                    "Free daily + paid extras require rank"
+            };
+        }
+        List<String> lore = new ArrayList<>();
+        lore.add(def.cost() > 0 ? "Cost: $" + String.format("%.2f", def.cost()) : "Free (when ready)");
+        if (def.hasExtraCost()) {
+            lore.add("Extra while on CD: $" + String.format("%.2f", def.extraCost()));
+        }
+        lore.add("Delay: " + def.delaySeconds() + "s");
+        return lore.toArray(String[]::new);
     }
 
     public void openJobs(Player player) {
@@ -354,88 +425,17 @@ public final class Menus {
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "jobs gui", e);
         }
-        inv.setItem(40, YapMenuHolder.icon(Material.ARROW, "Back"));
+        placeNavButton(inv, 40, player);
         clickMeta.put(player.getUniqueId(), meta);
         player.openInventory(inv);
     }
 
     public void openAuctions(Player player) {
-        if (!config.featureAuctions()) {
-            player.sendMessage("§cAuctions are disabled.");
-            return;
-        }
-        if (!Perms.require(player, "yapdata.ah")) {
-            return;
-        }
-        YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.AUCTIONS);
-        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Auction House", NamedTextColor.GOLD));
-        holder.bind(inv);
-        YapMenuHolder.fillBorder(inv);
-        Map<Integer, String> meta = new HashMap<>();
-        try {
-            int slot = 10;
-            for (var a : auctions.listActive(28)) {
-                while (slot % 9 == 0 || slot % 9 == 8) {
-                    slot++;
-                }
-                if (slot >= 44) {
-                    break;
-                }
-                ItemStack[] items = ItemSerializer.deserialize(a.itemBlob(), 1);
-                ItemStack display = items.length > 0 && items[0] != null
-                        ? items[0].clone()
-                        : YapMenuHolder.icon(Material.PAPER, "#" + a.id());
-                display.editMeta(m -> {
-                    var lore = m.lore() != null ? new java.util.ArrayList<>(m.lore()) : new java.util.ArrayList<Component>();
-                    lore.add(Component.text("Price: $" + String.format("%.2f", a.price()), NamedTextColor.GREEN));
-                    lore.add(Component.text("Seller: " + a.sellerName(), NamedTextColor.GRAY));
-                    lore.add(Component.text("Click to buy #" + a.id(), NamedTextColor.YELLOW));
-                    m.lore(lore);
-                });
-                inv.setItem(slot, display);
-                meta.put(slot, "buy:" + a.id());
-                slot++;
-            }
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "ah gui", e);
-        }
-        inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
-        inv.setItem(45, YapMenuHolder.icon(Material.EMERALD, NamedTextColor.GREEN,
-                "Sell held item", "Use /ah sell <price>"));
-        clickMeta.put(player.getUniqueId(), meta);
-        player.openInventory(inv);
+        auctionMenus.openBrowse(player);
     }
 
     public void openMail(Player player) {
-        if (!Perms.require(player, "yapdata.mail")) {
-            return;
-        }
-        YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.MAIL);
-        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Mail", NamedTextColor.WHITE));
-        holder.bind(inv);
-        YapMenuHolder.fillBorder(inv);
-        try {
-            int slot = 10;
-            for (var m : mail.list(player.getUniqueId(), config.mailMaxUnread())) {
-                while (slot % 9 == 0 || slot % 9 == 8) {
-                    slot++;
-                }
-                if (slot >= 44) {
-                    break;
-                }
-                inv.setItem(slot, YapMenuHolder.icon(
-                        m.read() ? Material.PAPER : Material.MAP,
-                        "#" + m.id() + " from " + m.fromName(),
-                        m.message()));
-                slot++;
-            }
-            mail.markAllRead(player.getUniqueId());
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "mail gui", e);
-        }
-        inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
-        inv.setItem(53, YapMenuHolder.icon(Material.LAVA_BUCKET, NamedTextColor.RED, "Clear all"));
-        player.openInventory(inv);
+        mailMenus.openInbox(player);
     }
 
     private final MenuClickHandler clicks = new MenuClickHandler(this);

@@ -54,6 +54,7 @@ public final class PlayerDataBedrockForms {
         if (menus.config.featureHomes() && player.hasPermission("yapdata.home")) {
             buttons.add("Homes");
             actions.add(() -> {
+                menus.markOpenedFromHub(player);
                 if (!tryOpenHomes(menus, player)) {
                     menus.openHomesInventory(player);
                 }
@@ -62,6 +63,7 @@ public final class PlayerDataBedrockForms {
         if (menus.config.featureWarps() && player.hasPermission("yapdata.warp")) {
             buttons.add("Warps");
             actions.add(() -> {
+                menus.markOpenedFromHub(player);
                 if (!tryOpenWarps(menus, player)) {
                     menus.openWarpsInventory(player);
                 }
@@ -70,6 +72,7 @@ public final class PlayerDataBedrockForms {
         if (menus.config.featureKits() && player.hasPermission("yapdata.kit")) {
             buttons.add("Kits");
             actions.add(() -> {
+                menus.markOpenedFromHub(player);
                 if (!tryOpenKits(menus, player)) {
                     menus.openKitsInventory(player);
                 }
@@ -77,7 +80,10 @@ public final class PlayerDataBedrockForms {
         }
         if (menus.config.featureJobs() && player.hasPermission("yapdata.jobs")) {
             buttons.add("Jobs");
-            actions.add(() -> menus.openJobs(player));
+            actions.add(() -> {
+                menus.markOpenedFromHub(player);
+                menus.openJobs(player);
+            });
         }
         if (org.bukkit.Bukkit.getPluginManager().getPlugin("YaPSkills") != null
                 && player.hasPermission("yapskills.use")) {
@@ -86,11 +92,17 @@ public final class PlayerDataBedrockForms {
         }
         if (menus.config.featureAuctions() && player.hasPermission("yapdata.ah")) {
             buttons.add("Auctions");
-            actions.add(() -> menus.openAuctions(player));
+            actions.add(() -> {
+                menus.markOpenedFromHub(player);
+                menus.openAuctions(player);
+            });
         }
         if (menus.config.featureMail() && player.hasPermission("yapdata.mail")) {
             buttons.add("Mail");
-            actions.add(() -> menus.openMail(player));
+            actions.add(() -> {
+                menus.markOpenedFromHub(player);
+                menus.openMail(player);
+            });
         }
         if (org.bukkit.Bukkit.getPluginManager().getPlugin("YaPClaims") != null
                 && player.hasPermission("yapdata.claim")) {
@@ -135,35 +147,40 @@ public final class PlayerDataBedrockForms {
         List<String> buttons = new ArrayList<>();
         List<String> kitIds = new ArrayList<>();
         for (var entry : menus.config.kits().entrySet()) {
-            if (!Perms.hasKit(player, entry.getKey())) {
-                continue;
-            }
             if (buttons.size() >= 20) {
                 break;
             }
             KitDef def = entry.getValue();
-            String remain = "Ready";
+            boolean unlocked = Perms.hasKit(player, entry.getKey());
+            String remain = unlocked ? "Ready" : "LOCKED";
             try {
-                var last = menus.kits.lastClaim(player.getUniqueId(), def.id());
-                if (last.isPresent() && def.delaySeconds() > 0) {
-                    long secs = java.time.Duration.between(java.time.Instant.now(),
-                            last.get().plusSeconds(def.delaySeconds())).getSeconds();
-                    if (secs > 0) {
-                        remain = "CD " + CooldownFormat.formatSeconds(secs);
+                if (unlocked) {
+                    var last = menus.kits.lastClaim(player.getUniqueId(), def.id());
+                    if (last.isPresent() && def.delaySeconds() > 0) {
+                        long secs = java.time.Duration.between(java.time.Instant.now(),
+                                last.get().plusSeconds(def.delaySeconds())).getSeconds();
+                        if (secs > 0) {
+                            remain = "CD " + CooldownFormat.formatSeconds(secs);
+                            if (def.hasExtraCost()) {
+                                remain += " $" + String.format("%.0f", def.extraCost());
+                            }
+                        }
                     }
                 }
             } catch (Exception ignored) {
             }
             String cost = def.cost() > 0 ? " · $" + String.format("%.2f", def.cost()) : "";
-            buttons.add(entry.getKey() + " (" + remain + cost + ")");
+            String label = unlocked
+                    ? entry.getKey() + " (" + remain + cost + ")"
+                    : entry.getKey() + " [LOCKED]";
+            buttons.add(label);
             kitIds.add(entry.getKey());
         }
-        buttons.add("Back");
-        buttons.add("Close");
+        appendFeatureNav(menus, player, buttons);
 
         String content = kitIds.isEmpty()
                 ? "No kits available."
-                : "Tap a kit to claim.";
+                : "Tap a kit to claim. Locked kits need the matching rank.";
         int id = ui.sendSimpleForm(
                 player,
                 "Kits",
@@ -198,8 +215,7 @@ public final class PlayerDataBedrockForms {
             menus.plugin.getLogger().log(Level.WARNING, "homes bedrock form", e);
             return false;
         }
-        buttons.add("Back");
-        buttons.add("Close");
+        appendFeatureNav(menus, player, buttons);
 
         int id = ui.sendSimpleForm(
                 player,
@@ -235,8 +251,7 @@ public final class PlayerDataBedrockForms {
             menus.plugin.getLogger().log(Level.WARNING, "warps bedrock form", e);
             return false;
         }
-        buttons.add("Back");
-        buttons.add("Close");
+        appendFeatureNav(menus, player, buttons);
 
         int id = ui.sendSimpleForm(
                 player,
@@ -297,13 +312,7 @@ public final class PlayerDataBedrockForms {
             YapSched.entity(menus.plugin, player, () -> player.performCommand("kit " + kit));
             return;
         }
-        if (idx == kitIds.size()) {
-            // Back
-            if (!tryOpenHub(menus, player)) {
-                menus.openHubInventory(player);
-            }
-        }
-        // Close = ignore
+        handleFeatureNavClick(menus, player, idx, kitIds.size());
     }
 
     private static void handleHomesResult(Menus menus, Player player, BedrockFormResult result,
@@ -329,11 +338,7 @@ public final class PlayerDataBedrockForms {
             }
             return;
         }
-        if (idx == names.size()) {
-            if (!tryOpenHub(menus, player)) {
-                menus.openHubInventory(player);
-            }
-        }
+        handleFeatureNavClick(menus, player, idx, names.size());
     }
 
     private static void handleWarpsResult(Menus menus, Player player, BedrockFormResult result,
@@ -359,10 +364,16 @@ public final class PlayerDataBedrockForms {
             }
             return;
         }
-        if (idx == names.size()) {
-            if (!tryOpenHub(menus, player)) {
-                menus.openHubInventory(player);
-            }
-        }
+        handleFeatureNavClick(menus, player, idx, names.size());
+    }
+
+    /** Hub Back only when opened from YaP Menu; NPC/command forms only get Close. */
+    private static void appendFeatureNav(Menus menus, Player player, List<String> buttons) {
+        // Never offer Back → YaP Menu from feature forms (NPC kits/AH/mail included).
+        buttons.add("Close");
+    }
+
+    private static void handleFeatureNavClick(Menus menus, Player player, int idx, int firstNavIndex) {
+        // Close (or any nav slot) — dismiss only; do not open hub.
     }
 }

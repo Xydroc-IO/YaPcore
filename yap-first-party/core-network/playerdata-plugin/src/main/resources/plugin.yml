@@ -29,7 +29,7 @@ commands:
     permission: yapdata.admin
   yapdata:
     description: Admin reload / status / force-save
-    usage: /yapdata <reload|status|save>
+    usage: /yapdata <reload|status|save|unlock|recoverprofile>
     permission: yapdata.admin
 permissions:
   yapdata.admin:
@@ -68,8 +68,41 @@ permissions:
   yapdata.kit.adventurer:
     description: Claim the adventurer kit
     default: false
+  yapdata.kit.wood:
+    description: Claim the wood/leather gear kit
+    default: true
+  yapdata.kit.stone:
+    description: Claim the stone/chainmail gear kit
+    default: true
+  yapdata.kit.iron:
+    description: Claim the iron gear kit
+    default: true
+  yapdata.kit.gold:
+    description: Claim the gold gear kit
+    default: true
+  yapdata.kit.diamond:
+    description: Claim the diamond gear kit
+    default: true
+  yapdata.kit.netherite:
+    description: Claim the netherite gear kit
+    default: true
+  yapdata.kit.enchanted_iron:
+    description: Claim the enchanted iron gear kit
+    default: true
+  yapdata.kit.enchanted_diamond:
+    description: Claim the enchanted diamond gear kit
+    default: true
+  yapdata.kit.enchanted_netherite:
+    description: Claim the enchanted netherite gear kit
+    default: true
   yapdata.kit.vip:
-    description: Claim the VIP kit
+    description: Claim the VIP rank kit
+    default: false
+  yapdata.kit.mvp:
+    description: Claim the MVP rank kit
+    default: false
+  yapdata.kit.elite:
+    description: Claim the Elite rank kit
     default: false
   yapdata.kit.*:
     description: Access all kits

@@ -50,6 +50,7 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
                 case "home" -> goHome(player, args);
                 case "delhome" -> delHome(player, args);
                 case "homes" -> {
+                    menus.markOpenedStandalone(player);
                     menus.openHomes(player);
                     yield true;
                 }

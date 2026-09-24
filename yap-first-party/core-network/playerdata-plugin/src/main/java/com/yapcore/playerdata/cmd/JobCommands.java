@@ -44,6 +44,7 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
         }
         try {
             if (args.length == 0) {
+                menus.markOpenedStandalone(player);
                 menus.openJobs(player);
                 return true;
             }

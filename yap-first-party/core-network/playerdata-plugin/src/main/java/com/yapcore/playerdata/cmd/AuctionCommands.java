@@ -48,6 +48,7 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
         }
         try {
             if (args.length == 0 || args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("gui")) {
+                menus.markOpenedStandalone(player);
                 menus.openAuctions(player);
                 return true;
             }
