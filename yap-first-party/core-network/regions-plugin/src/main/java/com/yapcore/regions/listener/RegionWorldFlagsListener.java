@@ -1,6 +1,7 @@
 package com.yapcore.regions.listener;
 
 import com.yapcore.regions.service.RegionServiceImpl;
+import com.yapcore.sched.YapSched;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -23,17 +24,21 @@ import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Hub / spawn world flags: hunger, farmland, frames, armor stands, leaf decay, pistons, vehicles.
  */
 public final class RegionWorldFlagsListener implements Listener {
 
+    private final JavaPlugin plugin;
     private final RegionServiceImpl regions;
 
-    public RegionWorldFlagsListener(RegionServiceImpl regions) {
+    public RegionWorldFlagsListener(JavaPlugin plugin, RegionServiceImpl regions) {
+        this.plugin = plugin;
         this.regions = regions;
     }
 
@@ -45,14 +50,33 @@ public final class RegionWorldFlagsListener implements Listener {
         if (event.getFoodLevel() >= player.getFoodLevel()) {
             return;
         }
-        if (!regions.at(player.getLocation()).isPresent()) {
-            return;
-        }
         if (!regions.isHungerAllowed(player.getLocation())) {
             event.setCancelled(true);
-            // Keep the bar from visually draining on some clients.
-            event.setFoodLevel(player.getFoodLevel());
+            // Keep full — vitals sync / soft-switch can leave a drained bar; cancel alone
+            // only stops further loss.
+            fillFood(player);
+            event.setFoodLevel(20);
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        // Delay so PlayerData vitals apply first, then re-fill on safe hubs / spawn pads.
+        YapSched.entityLater(plugin, player, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            if (!regions.isHungerAllowed(player.getLocation())) {
+                fillFood(player);
+            }
+        }, 40L);
+    }
+
+    private static void fillFood(Player player) {
+        player.setFoodLevel(20);
+        player.setSaturation(20f);
+        player.setExhaustion(0f);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

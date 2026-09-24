@@ -5,6 +5,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public final class RegionsConfig {
 
@@ -26,6 +29,14 @@ public final class RegionsConfig {
     private String notifyActionBarLeave = "&7« &f{region}";
     /** When set, players outside any region gamemode override use this mode. */
     private org.bukkit.GameMode outsideGameMode;
+
+    /** Backends where hunger + all player damage are denied everywhere (lobby / hub). */
+    private Set<String> safeServers = Set.of("lobby", "hub");
+
+    private boolean spawnPadEnabled = true;
+    private String spawnPadRegionName = "spawn";
+    private int spawnPadRadius = 64;
+    private int spawnPadHeight = 96;
 
     public RegionsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -66,6 +77,27 @@ public final class RegionsConfig {
         notifyActionBarEnter = c.getString("notify.action-bar-enter", "&a» &f{region}");
         notifyActionBarLeave = c.getString("notify.action-bar-leave", "&7« &f{region}");
         outsideGameMode = parseGameMode(c.getString("outside-gamemode", ""));
+
+        safeServers = new HashSet<>();
+        for (String id : c.getStringList("safe-servers")) {
+            if (id != null && !id.isBlank()) {
+                safeServers.add(id.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        if (safeServers.isEmpty() && !c.isSet("safe-servers")) {
+            // Product default when key omitted: lobby/hub are always safe.
+            safeServers = Set.of("lobby", "hub");
+        }
+
+        spawnPadEnabled = c.getBoolean("spawn-pad.enabled", true);
+        spawnPadRegionName = c.getString("spawn-pad.region-name", "spawn");
+        if (spawnPadRegionName == null || spawnPadRegionName.isBlank()) {
+            spawnPadRegionName = "spawn";
+        } else {
+            spawnPadRegionName = spawnPadRegionName.trim().toLowerCase(Locale.ROOT);
+        }
+        spawnPadRadius = Math.max(8, c.getInt("spawn-pad.radius", 64));
+        spawnPadHeight = Math.max(16, c.getInt("spawn-pad.height", 96));
     }
 
     private static org.bukkit.GameMode parseGameMode(String raw) {
@@ -203,5 +235,45 @@ public final class RegionsConfig {
     /** Null when unset — leave restores previous mode (legacy). */
     public org.bukkit.GameMode outsideGameMode() {
         return outsideGameMode;
+    }
+
+    /** True when this backend denies hunger + all damage everywhere (e.g. lobby). */
+    public boolean isSafeServer() {
+        return safeServers.contains(serverId.toLowerCase(Locale.ROOT));
+    }
+
+    public Set<String> safeServers() {
+        return safeServers;
+    }
+
+    public boolean spawnPadEnabled() {
+        return spawnPadEnabled;
+    }
+
+    public String spawnPadRegionName() {
+        return spawnPadRegionName;
+    }
+
+    public int spawnPadRadius() {
+        return spawnPadRadius;
+    }
+
+    public int spawnPadHeight() {
+        return spawnPadHeight;
+    }
+
+    /** Unit-test harness. */
+    void applySafeServersForTest(Set<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            this.safeServers = Set.of();
+        } else {
+            Set<String> next = new HashSet<>();
+            for (String id : ids) {
+                if (id != null && !id.isBlank()) {
+                    next.add(id.trim().toLowerCase(Locale.ROOT));
+                }
+            }
+            this.safeServers = Set.copyOf(next);
+        }
     }
 }

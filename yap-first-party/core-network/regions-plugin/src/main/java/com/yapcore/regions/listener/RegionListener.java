@@ -105,9 +105,6 @@ public final class RegionListener implements Listener {
         if (!(event.getEntity() instanceof Player victim)) {
             return;
         }
-        if (!regions.at(victim.getLocation()).isPresent()) {
-            return;
-        }
         if (!regions.isDamageAllowed(victim.getLocation())) {
             event.setCancelled(true);
         }
@@ -116,16 +113,11 @@ public final class RegionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDamage(EntityDamageByEntityEvent event) {
         Player attacker = resolvePlayerDamager(event.getDamager());
-        if (attacker != null
-                && regions.at(attacker.getLocation()).isPresent()
-                && !regions.isDamageAllowed(attacker.getLocation())) {
+        if (attacker != null && !regions.isDamageAllowed(attacker.getLocation())) {
             event.setCancelled(true);
             return;
         }
         if (!(event.getEntity() instanceof Player victim)) {
-            return;
-        }
-        if (!regions.at(victim.getLocation()).isPresent()) {
             return;
         }
         if (!regions.isDamageAllowed(victim.getLocation())) {

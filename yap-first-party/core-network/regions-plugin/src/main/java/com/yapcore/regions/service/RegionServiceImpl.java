@@ -421,6 +421,89 @@ public final class RegionServiceImpl implements RegionService {
         return access.isVehicleDestroyAllowed(location);
     }
 
+    public boolean isSafeServer() {
+        return config.isSafeServer();
+    }
+
+    /**
+     * Ensure classic hub/spawn region names deny hunger + all damage (migrates older hubs).
+     */
+    public void ensureNamedSafeFlags() {
+        for (String name : List.of("spawn", "hub", "lobby")) {
+            if (named(name).isEmpty()) {
+                continue;
+            }
+            try {
+                setFlag(name, RegionFlag.DAMAGE, FlagValue.DENY);
+                setFlag(name, RegionFlag.HUNGER, FlagValue.DENY);
+                setFlag(name, RegionFlag.PVP, FlagValue.DENY);
+            } catch (SQLException e) {
+                LOG.log(Level.WARNING, "Could not harden region flags for " + name + ": " + e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void ensureSpawnPad(Location center) throws SQLException {
+        if (!config.spawnPadEnabled() || center == null || center.getWorld() == null) {
+            return;
+        }
+        String name = config.spawnPadRegionName();
+        String world = center.getWorld().getName();
+        int r = config.spawnPadRadius();
+        int yPad = config.spawnPadHeight();
+        int x = center.getBlockX();
+        int y = center.getBlockY();
+        int z = center.getBlockZ();
+        int minY = center.getWorld().getMinHeight();
+        int maxY = center.getWorld().getMaxHeight() - 1;
+        int x1 = x - r;
+        int x2 = x + r;
+        int y1 = Math.max(minY, y - yPad);
+        int y2 = Math.min(maxY, y + yPad);
+        int z1 = z - r;
+        int z2 = z + r;
+        if (named(name).isPresent()) {
+            redefine(name, world, x1, y1, z1, x2, y2, z2);
+        } else {
+            define(name, world, x1, y1, z1, x2, y2, z2);
+        }
+        applyTemplate(name, "spawn");
+        AdminRegion region = named(name).orElse(null);
+        if (region != null && region.priority() < 10) {
+            setPriority(name, 10);
+        }
+    }
+
+    /**
+     * First-boot helper: create spawn pad from {@code preferred} or the first world's spawn
+     * when no spawn region exists yet.
+     */
+    public void bootstrapSpawnPadIfNeeded(Location preferred) {
+        if (!config.spawnPadEnabled()) {
+            return;
+        }
+        if (named(config.spawnPadRegionName()).isPresent()) {
+            ensureNamedSafeFlags();
+            return;
+        }
+        Location loc = preferred;
+        if (loc == null || loc.getWorld() == null) {
+            var worlds = org.bukkit.Bukkit.getWorlds();
+            if (worlds.isEmpty()) {
+                return;
+            }
+            loc = worlds.getFirst().getSpawnLocation();
+        }
+        try {
+            ensureSpawnPad(loc);
+            LOG.info("Created spawn-pad region '" + config.spawnPadRegionName()
+                    + "' (hunger + damage denied)");
+        } catch (SQLException e) {
+            LOG.log(Level.WARNING, "Spawn-pad bootstrap failed: " + e.getMessage());
+        }
+    }
+
     private AdminRegion requireNamed(String name) throws SQLException {
         return repository.findByName(config.serverId(), name)
                 .orElseThrow(() -> new SQLException("Unknown region: " + name));

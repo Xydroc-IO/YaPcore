@@ -74,4 +74,11 @@ public interface RegionService {
 
     /** Named templates available on this server (flag + message presets). */
     List<String> listTemplates();
+
+    /**
+     * Upsert the configured spawn-pad cuboid around {@code center} and apply the
+     * built-in {@code spawn} template (hunger + all damage denied).
+     * No-op when spawn-pad is disabled in YaPRegions config.
+     */
+    void ensureSpawnPad(Location center) throws SQLException;
 }

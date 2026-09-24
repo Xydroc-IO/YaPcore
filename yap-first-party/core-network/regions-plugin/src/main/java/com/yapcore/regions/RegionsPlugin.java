@@ -9,6 +9,8 @@ import com.yapcore.regions.listener.RegionGamemodeListener;
 import com.yapcore.regions.listener.RegionListener;
 import com.yapcore.regions.listener.RegionWorldFlagsListener;
 import com.yapcore.regions.service.RegionServiceImpl;
+import com.yapcore.sched.YapSched;
+import org.bukkit.Location;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -29,7 +31,7 @@ public final class RegionsPlugin extends JavaPlugin {
         reloadRegions();
 
         getServer().getPluginManager().registerEvents(new RegionListener(config, regionService), this);
-        getServer().getPluginManager().registerEvents(new RegionWorldFlagsListener(regionService), this);
+        getServer().getPluginManager().registerEvents(new RegionWorldFlagsListener(this, regionService), this);
         gamemodeListener = new RegionGamemodeListener(this, config, regionService);
         getServer().getPluginManager().registerEvents(gamemodeListener, this);
 
@@ -43,8 +45,19 @@ public final class RegionsPlugin extends JavaPlugin {
         getServer().getServicesManager().register(
                 RegionService.class, regionService, this, ServicePriority.Normal);
 
+        regionService.ensureNamedSafeFlags();
+        // Worlds are ready; create spawn pad if missing (Essentials /setspawn also upserts).
+        YapSched.global(this, () -> {
+            Location preferred = getServer().getWorlds().isEmpty()
+                    ? null
+                    : getServer().getWorlds().getFirst().getSpawnLocation();
+            regionService.bootstrapSpawnPadIfNeeded(preferred);
+        });
+
         getLogger().info("YaPRegions ready — server=" + config.serverId()
-                + " regions=" + regionService.listRegions().size());
+                + " regions=" + regionService.listRegions().size()
+                + " safe-server=" + config.isSafeServer()
+                + (config.isSafeServer() ? " (hunger+damage off everywhere)" : ""));
     }
 
     @Override
@@ -86,6 +99,7 @@ public final class RegionsPlugin extends JavaPlugin {
             regionService = new RegionServiceImpl(config, repository, messages, templates);
         }
         regionService.reload();
+        regionService.ensureNamedSafeFlags();
         if (gamemodeListener != null) {
             gamemodeListener.refreshOnlinePlayers();
         }

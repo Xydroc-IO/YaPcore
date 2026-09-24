@@ -23,9 +23,16 @@ class BuiltinRegionTemplatesTest {
         BuiltinRegionTemplates.Preset spawn = BuiltinRegionTemplates.get("spawn");
         assertEquals("adventure", spawn.gameMode());
         assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.PVP));
+        assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.DAMAGE));
+        assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.HUNGER));
         assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.BUILD));
         assertEquals(FlagValue.DENY, spawn.flags().get(RegionFlag.NPC_DAMAGE));
         assertEquals("Welcome to spawn.", spawn.messages().get(RegionMessageKind.GREETING));
+
+        BuiltinRegionTemplates.Preset hub = BuiltinRegionTemplates.get("hub");
+        assertEquals(FlagValue.DENY, hub.flags().get(RegionFlag.DAMAGE));
+        assertEquals(FlagValue.DENY, hub.flags().get(RegionFlag.HUNGER));
+        assertEquals(FlagValue.DENY, hub.flags().get(RegionFlag.PVP));
 
         BuiltinRegionTemplates.Preset wild = BuiltinRegionTemplates.get("wilderness");
         assertEquals("survival", wild.gameMode());

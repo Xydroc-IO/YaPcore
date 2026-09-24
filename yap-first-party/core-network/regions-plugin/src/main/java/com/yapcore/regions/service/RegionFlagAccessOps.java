@@ -36,6 +36,9 @@ final class RegionFlagAccessOps {
         if (StaffBypass.land(attacker)) {
             return true;
         }
+        if (host.isSafeServer()) {
+            return false;
+        }
         Optional<AdminRegion> region = host.at(victim.getLocation());
         if (region.isEmpty()) {
             return true;
@@ -44,6 +47,9 @@ final class RegionFlagAccessOps {
     }
 
     boolean isDamageAllowed(Location location) {
+        if (host.isSafeServer()) {
+            return false;
+        }
         Optional<AdminRegion> region = host.at(location);
         if (region.isEmpty()) {
             return true;
@@ -52,6 +58,9 @@ final class RegionFlagAccessOps {
     }
 
     boolean isMobDamageAllowed(Player victim) {
+        if (host.isSafeServer()) {
+            return false;
+        }
         Optional<AdminRegion> region = host.at(victim.getLocation());
         if (region.isEmpty()) {
             return true;
@@ -143,6 +152,9 @@ final class RegionFlagAccessOps {
     }
 
     boolean isHungerAllowed(Location location) {
+        if (host.isSafeServer()) {
+            return false;
+        }
         return host.flagAt(location, RegionFlag.HUNGER) == FlagValue.ALLOW;
     }
 

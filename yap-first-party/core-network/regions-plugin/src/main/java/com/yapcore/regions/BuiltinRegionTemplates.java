@@ -66,10 +66,10 @@ public final class BuiltinRegionTemplates {
                 greet("Welcome to spawn.", "You are leaving spawn."));
     }
 
-    /** Same protection as a saved hub pad: no PvP or building, hunger off, weather clear. */
+    /** Same protection as spawn for combat/hunger: full damage off, no building, weather clear. */
     private static Preset hub() {
         return new Preset("hub", "adventure", deny(
-                RegionFlag.PVP, RegionFlag.MOB_DAMAGE, RegionFlag.NPC_DAMAGE,
+                RegionFlag.PVP, RegionFlag.DAMAGE, RegionFlag.MOB_DAMAGE, RegionFlag.NPC_DAMAGE,
                 RegionFlag.BUILD,
                 RegionFlag.FIRE_SPREAD, RegionFlag.MOB_SPAWNING, RegionFlag.MOB_ENTRY,
                 RegionFlag.TNT, RegionFlag.CREEPER_EXPLOSION,

@@ -132,6 +132,11 @@ public final class PluginConfigHints {
             Map.entry("slow-mode-seconds", "Shipped at 3 for typical public SMP. Set 0 for LAN/dev with no wait."),
             Map.entry("network.enabled", "Needs YaP Link chat bridge on a multi-server network."),
             Map.entry("server-id", "Must match the backend name in YaP Link (often lobby)."),
+            Map.entry("safe-servers", "Backends with hunger + all damage off everywhere (lobby)."),
+            Map.entry("spawn-pad.enabled", "Auto-protect /setspawn with a spawn region."),
+            Map.entry("spawn-pad.radius", "Horizontal radius of the auto spawn pad."),
+            Map.entry("spawn-pad.height", "Vertical half-extent of the auto spawn pad."),
+            Map.entry("spawn-pad.region-name", "Region name used for the auto spawn pad."),
             Map.entry("climate.enabled", "On = noon, clear skies, no natural mobs. Creative instances turn this on by default.")
     );
 
@@ -161,6 +166,8 @@ public final class PluginConfigHints {
             Map.entry("claims", "Land claims"),
             Map.entry("jobs", "Jobs"),
             Map.entry("spawn", "Spawn"),
+            Map.entry("spawn-pad", "Spawn pad"),
+            Map.entry("safe-servers", "Safe backends"),
             Map.entry("tpa", "Teleport requests"),
             Map.entry("database", "Database")
     );
@@ -194,6 +201,7 @@ public final class PluginConfigHints {
             Map.entry("yap-admin", "Admin tools"),
             Map.entry("yap-disasters", "Disasters"),
             Map.entry("yap-dungeons", "Dungeons"),
+            Map.entry("yap-block", "Skyblock"),
             Map.entry("yap-gameplay-knobs", "Gameplay knobs"),
             Map.entry("yap-placeholderapi", "Placeholders"),
             Map.entry("yap-floodgate", "Floodgate"),
@@ -232,6 +240,7 @@ public final class PluginConfigHints {
             Map.entry("yap-admin", "Staff tools. Leave defaults if you are new."),
             Map.entry("yap-disasters", "Opt-in: weather extremes and random events. Off by default."),
             Map.entry("yap-dungeons", "Instanced dungeons (on by default). Needs YaPSkills + SQL."),
+            Map.entry("yap-block", "Grid skyblock islands (on by default). Needs SQL; soft YaPWorld / YaPPlayerData."),
             Map.entry("yap-gameplay-knobs", "Opt-in: Purpur-inspired encyclopedia. Master switch is settings.enabled."),
             Map.entry("yap-placeholderapi", "Local placeholder expansions only (no eCloud)."),
             Map.entry("yap-floodgate", "Lets Bedrock players join Java."),
